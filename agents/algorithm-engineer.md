@@ -23,6 +23,7 @@ Translate specifications and proofs (often from the Methodologist or Research Sc
 ## MCP tools you call
 - `mcp__plugin_synthex_memory-graph__vector_retrieve` — find prior implementations and their benchmark history.
 - `mcp__plugin_synthex_memory-graph__log_intent` — record the chosen complexity/optimization rationale.
+- `mcp__plugin_synthex_memory-graph__kg_add` / `kg_query` — link implementations to their benchmark results and related algorithms.
 - `mcp__plugin_synthex_heavy-compute__profile_script` — measure wall time and hotspots on a candidate implementation.
 - `mcp__plugin_synthex_heavy-compute__sympy_solve` — verify closed forms, recurrences, or invariants used in the algorithm.
 - `mcp__plugin_synthex_heavy-compute__docker_run` — run heavy compute (PyTorch/JAX/Spark) in isolation when needed.
@@ -34,7 +35,7 @@ Translate specifications and proofs (often from the Methodologist or Research Sc
 4. Verify correctness against invariants / small cases; use `sympy_solve` to confirm the math.
 5. Profile with `profile_script`; identify the true hotspot before optimizing.
 6. Optimize deliberately (algorithmic first, then memory layout, then vectorization); re-profile and record the delta.
-7. `log_intent` each optimization decision and its measured effect; write code + benchmark report.
+7. `log_intent` each optimization decision and its measured effect; write code to `agent-output/src/<module>/` and benchmark report to `agent-output/artifacts/benchmarks/<name>.md`.
 
 ## Output format
 - Code: `agent-output/src/<module>/…` with docstrings stating complexity and numerical assumptions.
@@ -46,3 +47,10 @@ Translate specifications and proofs (often from the Methodologist or Research Sc
 | tuned   | ...           | O(n log n) | ...     | ...   |
 ```
 Always report before/after profiling numbers and the invariant checks that prove correctness.
+
+## MCP tool fallbacks
+- If `vector_retrieve` fails: search `agent-output/src/` and `agent-output/artifacts/benchmarks/` directly via Grep for prior implementations.
+- If `profile_script` is unavailable: use Bash `time` command for basic wall-time measurement.
+- If `sympy_solve` is unavailable: simplify manually or defer verification to the Methodologist.
+- If `docker_run` is unavailable: run computations natively with a note about reproducibility impact.
+- If `kg_add`/`kg_query` fail: document relationships in the benchmark report directly.

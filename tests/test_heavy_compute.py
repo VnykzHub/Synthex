@@ -18,7 +18,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "mcp-servers" / "heavy-compute"))
+_heavy_compute_path = str(Path(__file__).resolve().parent.parent / "mcp-servers" / "heavy-compute")
+sys.path.insert(0, _heavy_compute_path)
 
 import server as hc  # noqa: E402
 
@@ -55,50 +56,50 @@ class TestSympySolve(unittest.TestCase):
     def test_solve_equation(self):
         self._only_if_sympy()
         r = hc.sympy_solve("x**2 - 4 = 0", kind="solve")
-        if r["result"] is not None:
-            self.assertIn("-2", str(r["result"]))
+        self.assertIsNotNone(r["result"])
+        self.assertIn("-2", str(r["result"]))
 
     def test_auto_solve_polynomial(self):
         self._only_if_sympy()
         r = hc.sympy_solve("x**2 - 4")
-        if r["result"] is not None:
-            self.assertIn("-2", str(r["result"]))
+        self.assertIsNotNone(r["result"])
+        self.assertIn("-2", str(r["result"]))
 
     def test_auto_solve_equation(self):
         self._only_if_sympy()
         r = hc.sympy_solve("x**2 = 4")
-        if r["result"] is not None:
-            self.assertIn("-2", str(r["result"]))
+        self.assertIsNotNone(r["result"])
+        self.assertIn("-2", str(r["result"]))
 
     def test_simplify(self):
         self._only_if_sympy()
         r = hc.sympy_solve("x + x + x", kind="simplify")
-        if r["result"] is not None:
-            self.assertIn("3*x", str(r["result"]))
+        self.assertIsNotNone(r["result"])
+        self.assertIn("3*x", str(r["result"]))
 
     def test_factor(self):
         self._only_if_sympy()
         r = hc.sympy_solve("x**2 - y**2", kind="factor")
-        if r["result"] is not None:
-            self.assertIn("x - y", str(r["result"]))
+        self.assertIsNotNone(r["result"])
+        self.assertIn("x - y", str(r["result"]))
 
     def test_integrate(self):
         self._only_if_sympy()
         r = hc.sympy_solve("x**2", kind="integrate")
-        if r["result"] is not None:
-            self.assertIn("x**3", str(r["result"]).replace(" ", ""))
+        self.assertIsNotNone(r["result"])
+        self.assertIn("x**3", str(r["result"]).replace(" ", ""))
 
     def test_diff(self):
         self._only_if_sympy()
         r = hc.sympy_solve("x**3", kind="diff")
-        if r["result"] is not None:
-            self.assertIn("3*x**2", str(r["result"]).replace(" ", ""))
+        self.assertIsNotNone(r["result"])
+        self.assertIn("3*x**2", str(r["result"]).replace(" ", ""))
 
     def test_auto_trig_identity(self):
         self._only_if_sympy()
         r = hc.sympy_solve("sin(x)**2 + cos(x)**2")
-        if r["result"] is not None:
-            self.assertEqual(str(r["result"]), "1")
+        self.assertIsNotNone(r["result"])
+        self.assertEqual(str(r["result"]), "1")
 
     def test_unknown_kind(self):
         self._only_if_sympy()
@@ -114,10 +115,11 @@ class TestSympySolve(unittest.TestCase):
 
     def test_sympy_unavailable(self):
         """When sympy is not importable, return a clean error dict."""
-        # We test the graceful path by checking the import guard exists
-        r = hc.sympy_solve("x", kind="solve")
-        self.assertIn("result", r)
-        self.assertIn("steps", r)
+        from unittest.mock import patch
+        with patch.dict("sys.modules", {"sympy": None}):
+            r = hc.sympy_solve("x", kind="solve")
+        self.assertIsNone(r["result"])
+        self.assertTrue(any("unavailable" in s.lower() for s in r["steps"]))
 
 
 # -------------------------------------------------------------- profile_script
@@ -212,6 +214,14 @@ class TestSandbox(TmpCase):
     def test_resolve_under_root_outside(self):
         with self.assertRaises(ValueError):
             hc._resolve_under_root("/tmp/abs_evil.py")
+
+
+def tearDownModule():
+    """Clean up sys.path after tests."""
+    try:
+        sys.path.remove(_heavy_compute_path)
+    except ValueError:
+        pass
 
 
 if __name__ == "__main__":

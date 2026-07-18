@@ -11,8 +11,8 @@ $ARGUMENTS should contain `--script=<path>` pointing to the pipeline script.
 
 ## Step 1 -- Resolve SYNTHEX_ROOT and parse arguments
 
-```
-SYNTHEX_ROOT = $CLAUDE_PROJECT_DIR  (if set)  else $PWD
+```bash
+SYNTHEX_ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
 ```
 
 Parse $ARGUMENTS for:
@@ -21,6 +21,7 @@ Parse $ARGUMENTS for:
 
 If --script is missing, search user-input/ for pipeline scripts:
 ```bash
+SYNTHEX_ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
 find "$SYNTHEX_ROOT/user-input/datasets" -type f 2>/dev/null | head -20
 find "$SYNTHEX_ROOT/user-input/assignments" -type f \( -name "*.py" -o -name "*.sh" -o -name "*.ipynb" \) 2>/dev/null | head -10
 ```
@@ -57,9 +58,23 @@ mkdir -p "$SYNTHEX_ROOT/agent-output/artifacts/pipeline-$(date +%s)"
 ## Step 5 -- Log to state_ledger
 
 ```bash
-DETAILS="{\"script\":\"<script-path>\",\"exit\":\"<0|non-zero>\",\"output\":\"agent-output/artifacts/...\"}"
-sqlite3 "$SYNTHEX_ROOT/logs/state_ledger.db" \
-  "INSERT INTO state_ledger (agent, event_type, details) VALUES ('automation-engineer', 'pipeline.run', '$DETAILS');"
+SYNTHEX_ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
+
+# Verify DB and table exist before inserting
+if [ ! -f "$SYNTHEX_ROOT/logs/state_ledger.db" ]; then
+  echo "WARNING: state_ledger.db not found. Skipping audit log." >&2
+else
+  TABLE_OK=$(sqlite3 "$SYNTHEX_ROOT/logs/state_ledger.db" "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='state_ledger';")
+  if [ "$TABLE_OK" -eq 0 ]; then
+    echo "WARNING: state_ledger table not found. Skipping audit log." >&2
+  else
+    DETAILS="{\"script\":\"<script-path>\",\"exit\":\"<0|non-zero>\",\"output\":\"agent-output/artifacts/...\"}"
+    # Escape single quotes for SQLite to prevent injection
+    DETAILS_ESC="$(printf '%s' "$DETAILS" | sed "s/'/''/g")"
+    sqlite3 "$SYNTHEX_ROOT/logs/state_ledger.db" \
+      "INSERT INTO state_ledger (agent, event_type, details) VALUES ('automation-engineer', 'pipeline.run', '$DETAILS_ESC');"
+  fi
+fi
 ```
 
 ## Step 6 -- Report

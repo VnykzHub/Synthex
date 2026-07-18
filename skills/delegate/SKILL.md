@@ -26,21 +26,24 @@ Incorporate the retrieved chunks into your understanding of the task.
 
 ## Step 3 -- Log intent
 
-Run the `log_intent` MCP tool or insert directly into intents.db:
+Run the `log_intent` MCP tool (preferred) or insert directly into intents.db. If using raw SQL, escape single quotes first:
 
 ```bash
+# Escape single quotes for SQLite to prevent injection
+ARGUMENTS_ESC="$(printf '%s' "$ARGUMENTS" | sed "s/'/''/g")"
 sqlite3 "$SYNTHEX_ROOT/logs/intents.db" \
-  "INSERT INTO intents (agent, action, why, context) VALUES ('PI', 'task.delegate', '$ARGUMENTS', '{}');"
+  "INSERT INTO intents (agent, action, why, context) VALUES ('PI', 'task.delegate', '$ARGUMENTS_ESC', '{}');"
 ```
 
 ## Step 4 -- Decompose into subtasks
 
-Break $ARGUMENTS into concrete subtasks. For each subtask create a task record:
+Break $ARGUMENTS into concrete subtasks. For each subtask create a task record. Always escape single quotes in the title before inserting:
 
 ```bash
 TASK_ID=$(uuidgen 2>/dev/null || python3 -c "import uuid; print(uuid.uuid4().hex)")
+TITLE_ESC="$(printf '%s' '<subtask-title>' | sed "s/'/''/g")"
 sqlite3 "$SYNTHEX_ROOT/logs/intents.db" \
-  "INSERT INTO tasks (id, title, priority, status, assigned_to) VALUES ('$TASK_ID', '<subtask-title>', 'medium', 'pending', '<agent-name>');"
+  "INSERT INTO tasks (id, title, priority, status, assigned_to) VALUES ('$TASK_ID', '$TITLE_ESC', 'medium', 'pending', '<agent-name>');"
 ```
 
 Assign to agents based on the task domain:

@@ -46,6 +46,24 @@ def _db_path(root: Path, name: str) -> Path:
     return root / "logs" / (name + ".db")
 
 
+def _resolve_under_root(path: str, root: Optional[Path] = None) -> Path:
+    """Resolve *path* and ensure it lives under SYNTHEX_ROOT (or *root* if given).
+
+    Raises ValueError if the resolved path escapes the sandbox root.
+    """
+    if root is None:
+        root = resolve_root()
+    p = Path(path)
+    if not p.is_absolute():
+        p = root / p
+    p = p.resolve()
+    try:
+        p.relative_to(root)
+    except ValueError as exc:
+        raise ValueError(f"path {p} is outside SYNTHEX_ROOT {root}") from exc
+    return p
+
+
 # --------------------------------------------------------------------------- #
 # Schema init (contract §2 — EXACT match with init_db.sh)
 # --------------------------------------------------------------------------- #
@@ -59,6 +77,8 @@ def init_db(root: Optional[Path] = None) -> None:
     logs.mkdir(parents=True, exist_ok=True)
 
     conn = sqlite3.connect(str(logs / "intents.db"))
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=3000")
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS intents (
             id        INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -80,10 +100,14 @@ def init_db(root: Optional[Path] = None) -> None:
             completed_at TEXT
         );
     """)
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_intents_ts ON intents(ts)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_intents_event_type ON intents(action)")
     conn.commit()
     conn.close()
 
     conn = sqlite3.connect(str(logs / "state_ledger.db"))
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=3000")
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS state_ledger (
             id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -101,21 +125,25 @@ def init_db(root: Optional[Path] = None) -> None:
             ts        TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
         );
     """)
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_state_ledger_ts ON state_ledger(ts)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_state_ledger_event_type ON state_ledger(event_type)")
     conn.commit()
     conn.close()
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.") + \
-           f"{datetime.now(timezone.utc).microsecond // 1000:03d}Z"
+    """Current UTC timestamp as ISO-8601 with milliseconds (e.g. 2026-01-15T14:30:00.123Z)."""
+    now = datetime.now(timezone.utc)
+    return now.strftime("%Y-%m-%dT%H:%M:%S.") + f"{now.microsecond // 1000:03d}Z"
 
 
 def _uuid() -> str:
+    """Return a random hex UUID string."""
     return uuid.uuid4().hex
 
 
 # --------------------------------------------------------------------------- #
-# Chunker  (≤512 tokens ≈ 2000 chars, 20% overlap ≈ 400 chars)
+# Chunker  (<=512 tokens ≈ 2000 chars, 20% overlap ≈ 400 chars)
 # --------------------------------------------------------------------------- #
 
 CHUNK_SIZE = 2000
@@ -144,7 +172,7 @@ EMBED_DIM = 384
 
 class HashingEmbedder:
     """Deterministic 384-dim embedding from character n-grams via SHA-256.
-    Zero external dependencies — always available."""
+    Zero external dependencies -- always available."""
 
     def __init__(self, dim: int = EMBED_DIM) -> None:
         self.dim = dim
@@ -207,9 +235,12 @@ class _PureCosineIndex:
         self.store_dir.mkdir(parents=True, exist_ok=True)
         self._index_file = self.store_dir / "cosine_index.json"
         self._entries: list[dict[str, Any]] = []
+        self._pending_adds: list[dict[str, Any]] = []
+        self._flush_threshold = 20
         self._load()
 
     def _load(self) -> None:
+        """Load index from disk JSON file."""
         if self._index_file.exists():
             try:
                 self._entries = json.loads(self._index_file.read_text())
@@ -217,14 +248,26 @@ class _PureCosineIndex:
                 self._entries = []
 
     def _save(self) -> None:
+        """Flush buffered adds and write full index to disk."""
+        if self._pending_adds:
+            self._entries.extend(self._pending_adds)
+            self._pending_adds = []
         self._index_file.write_text(json.dumps(self._entries))
 
     def add(self, vec: list[float], meta: dict[str, Any]) -> None:
-        self._entries.append({"vec": vec, "meta": meta})
+        """Add a vector entry. Buffered writes: flushes to disk periodically."""
+        self._pending_adds.append({"vec": vec, "meta": meta})
+        if len(self._pending_adds) >= self._flush_threshold:
+            self._save()
+
+    def flush(self) -> None:
+        """Force flush all buffered adds to disk."""
         self._save()
 
     def search(self, query_vec: list[float], top_k: int = 5) -> list[dict[str, Any]]:
-        scored = [(_cosine(query_vec, e["vec"]), e["meta"]) for e in self._entries]
+        """Search the index for top-k closest vectors by cosine similarity."""
+        all_entries = self._entries + self._pending_adds
+        scored = [(_cosine(query_vec, e["vec"]), e["meta"]) for e in all_entries]
         scored.sort(key=lambda x: x[0], reverse=True)
         return [{"chunk": s[1].get("chunk", ""), "source": s[1].get("source", ""),
                  "score": round(s[0], 4), "ts": s[1].get("ts", "")} for s in scored[:top_k]]
@@ -238,7 +281,7 @@ class VectorStore:
     def __init__(self, root: Path) -> None:
         backend = os.environ.get("SYNTHEX_VECTOR_BACKEND", "chroma")
         if backend == "turbovec":
-            backend = "chroma"  # UNVERIFIED package — fall back
+            backend = "chroma"  # UNVERIFIED package -- fall back
         self._store_dir = root / "logs" / "vectors"
         self._store_dir.mkdir(parents=True, exist_ok=True)
         self._backend: Any = None
@@ -255,6 +298,10 @@ class VectorStore:
         if self._backend is None:
             self._backend = _PureCosineIndex(self._store_dir)
             self._backend_name = "pure-python-cosine"
+
+        # Reload persisted index from disk on startup
+        if self._backend_name == "numpy-cosine":
+            self._load_numpy()
 
     def _try_chroma(self) -> Any:
         try:
@@ -351,6 +398,22 @@ class VectorStore:
             except Exception:
                 pass
 
+    def _load_numpy(self) -> None:
+        """Reload persisted numpy vector index from disk on startup."""
+        if self._backend_name != "numpy-cosine":
+            return
+        try:
+            import numpy as np  # type: ignore
+            npy = self._store_dir / "numpy_index.npz"
+            meta_file = self._store_dir / "numpy_metas.json"
+            if npy.exists() and meta_file.exists():
+                data = np.load(str(npy))
+                self._backend["index"] = data["index"].tolist()
+                with open(str(meta_file)) as f:
+                    self._backend["metas"] = json.load(f)
+        except Exception:
+            pass
+
 
 # --------------------------------------------------------------------------- #
 # Tool implementations (contract §3)
@@ -362,6 +425,7 @@ _store: Any = None  # VectorStore
 
 
 def _ensure_store(root: Optional[Path] = None) -> VectorStore:
+    """Get or create the singleton VectorStore instance."""
     global _store
     if _store is None:
         if root is None:
@@ -371,6 +435,7 @@ def _ensure_store(root: Optional[Path] = None) -> VectorStore:
 
 
 def _ensure_encode():
+    """Ensure the embedder is initialized as a singleton."""
     global _encode_fn, _encode_label
     if _encode_fn is None:
         _encode_fn, _encode_label = _get_embedder()
@@ -382,7 +447,11 @@ def vector_index(path: str, root: Optional[Path] = None) -> dict[str, Any]:
         root = resolve_root()
     _ensure_encode()
     store = _ensure_store(root)
-    p = Path(path)
+    # Ensure the path is within the sandbox root (T9.4)
+    try:
+        p = _resolve_under_root(path, root=root)
+    except ValueError as exc:
+        return {"indexed": 0, "source": path, "error": str(exc)}
     if not p.exists():
         return {"indexed": 0, "source": str(p), "error": "file_not_found"}
     try:
@@ -401,6 +470,8 @@ def vector_index(path: str, root: Optional[Path] = None) -> dict[str, Any]:
         })
     if hasattr(store, "_save_numpy"):
         store._save_numpy()
+    if hasattr(store, "_backend") and hasattr(store._backend, "flush"):
+        store._backend.flush()
     return {"indexed": len(chunks), "source": str(p)}
 
 
@@ -413,7 +484,7 @@ def vector_retrieve(query: str, top_k: int = 5, scope: str = "all",
     return store.search(vec, top_k=top_k)
 
 
-def kg_add(subject: str, predicate: str, object: str, source: str = "",
+def kg_add(subject: str, predicate: str, obj: str, source: str = "",
            root: Optional[Path] = None) -> dict[str, str]:
     """Add a triple to the knowledge graph."""
     if root is None:
@@ -422,14 +493,14 @@ def kg_add(subject: str, predicate: str, object: str, source: str = "",
     conn = sqlite3.connect(str(_db_path(root, "state_ledger")))
     conn.execute(
         "INSERT INTO kg_triples (subject, predicate, object, source) VALUES (?,?,?,?)",
-        (subject, predicate, object, source),
+        (subject, predicate, obj, source),
     )
     conn.commit()
     conn.close()
     return {"status": "ok"}
 
 
-def kg_query(subject: str = "", predicate: str = "", object: str = "",
+def kg_query(subject: str = "", predicate: str = "", obj: str = "",
              root: Optional[Path] = None) -> list[dict[str, Any]]:
     """Query knowledge graph triples with optional LIKE filters."""
     if root is None:
@@ -445,9 +516,9 @@ def kg_query(subject: str = "", predicate: str = "", object: str = "",
     if predicate:
         wheres.append("predicate LIKE ?")
         params.append(f"%{predicate}%")
-    if object:
+    if obj:
         wheres.append("object LIKE ?")
-        params.append(f"%{object}%")
+        params.append(f"%{obj}%")
     sql = "SELECT * FROM kg_triples"
     if wheres:
         sql += " WHERE " + " AND ".join(wheres)
@@ -561,8 +632,12 @@ def drain_queue(root: Optional[Path] = None) -> dict[str, Any]:
     qf = root / "logs" / "index_queue.jsonl"
     if not qf.exists():
         return {"processed": 0, "message": "no queue file"}
-    lines = qf.read_text().splitlines()
+    # Rename queue file before processing to avoid partial-delete data loss
+    tmp = qf.with_suffix(".jsonl.processing")
+    qf.rename(tmp)
+    lines = tmp.read_text().splitlines()
     indexed = 0
+    total = len(lines)
     for line in lines:
         try:
             entry = json.loads(line)
@@ -570,10 +645,12 @@ def drain_queue(root: Optional[Path] = None) -> dict[str, Any]:
             if fp:
                 vector_index(fp, root=root)
                 indexed += 1
-        except Exception:
-            pass
-    qf.unlink()
-    return {"processed": indexed}
+        except json.JSONDecodeError as exc:
+            print(f"drain_queue: invalid JSON: {exc}", file=sys.stderr)
+        except Exception as exc:
+            print(f"drain_queue: error processing line: {exc}", file=sys.stderr)
+    tmp.unlink()
+    return {"processed": indexed, "total": total}
 
 
 # --------------------------------------------------------------------------- #
@@ -592,6 +669,8 @@ def _cli() -> None:
     p_ret.add_argument("--query", required=True)
     p_ret.add_argument("--top-k", type=int, default=5)
     p_ret.add_argument("--scope", default="all")
+    p_ret.add_argument("--json", action="store_true", help="output JSON array instead of plain text")
+    p_ret.add_argument("--root", default="", help="sandbox root directory (overrides env/cwd)")
     sub.add_parser("drain-queue", help="consume the index queue")
     p_tc = sub.add_parser("task-create", help="create a task")
     p_tc.add_argument("--title", required=True)
@@ -618,11 +697,15 @@ def _cli() -> None:
         result = vector_index(args.path, root=root)
         print(json.dumps(result))
     elif args.cmd == "retrieve":
-        results = vector_retrieve(args.query, top_k=args.top_k, scope=args.scope, root=root)
-        for r in results:
-            print(f"[{r['score']:.4f}] {r['source']}")
-            print(f"  {r['chunk'][:200]}")
-            print()
+        r_root = Path(args.root) if args.root else root
+        results = vector_retrieve(args.query, top_k=args.top_k, scope=args.scope, root=r_root)
+        if args.json:
+            print(json.dumps(results))
+        else:
+            for r in results:
+                print(f"[{r['score']:.4f}] {r['source']}")
+                print(f"  {r['chunk'][:200]}")
+                print()
     elif args.cmd == "drain-queue":
         result = drain_queue(root=root)
         print(json.dumps(result))
@@ -641,7 +724,7 @@ def _cli() -> None:
 
 
 def _selftest(root: Path) -> None:
-    """Self-contained test: init → index → retrieve → task CRUD."""
+    """Self-contained test: init -> index -> retrieve -> task CRUD."""
     init_db(root)
     print(f"selftest: root={root}")
     testfile = root / "selftest.txt"

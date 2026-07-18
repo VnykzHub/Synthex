@@ -58,3 +58,9 @@ per_stage:
 validation: {rows, grain_ok, issues}
 artifacts: agent-output/artifacts/runs/<name>/
 ```
+
+## MCP tool fallbacks
+- If `docker_run` is unavailable: execute pipeline stages natively with `timeout` for isolation; document the reproducibility gap.
+- If `etl_validate` is unavailable: run basic schema and grain validation via Bash/Python scripts manually.
+- If `profile_script` is unavailable: use Bash `time` for stage-level wall-time measurement.
+- If `vector_retrieve` fails: search `agent-output/artifacts/runs/` directly for prior pipeline configurations and results.

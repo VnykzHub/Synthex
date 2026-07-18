@@ -2,7 +2,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Read|Write|Edit|Bash",
+        "matcher": "Read|Write|Edit",
         "hooks": [
           { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/sandbox-gate.sh\"" }
         ]
@@ -25,7 +25,7 @@
     ],
     "SubagentStart": [
       {
-        "matcher": "",
+        "matcher": "*",
         "hooks": [
           { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/agent-lifecycle-logger.sh\" start" }
         ]
@@ -33,7 +33,7 @@
     ],
     "SubagentStop": [
       {
-        "matcher": "",
+        "matcher": "*",
         "hooks": [
           { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/agent-lifecycle-logger.sh\" stop" }
         ]

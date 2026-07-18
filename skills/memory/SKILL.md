@@ -2,7 +2,7 @@
 name: memory
 description: "/synthex:memory <query> -- Query the Memory Vault (vector_retrieve) and display top 5 chunks with source and score. Falls back to python3 CLI if MCP unavailable."
 disable-model-invocation: true
-allowed-tools: Bash(sqlite3 *) Bash(echo *) Bash(test *) Bash(python3 *) Bash(find *)
+allowed-tools: Bash(sqlite3 *) Bash(echo *) Bash(test *) Bash(python3 *) Bash(grep *) Bash(cat *)
 ---
 
 # /synthex:memory "<query>" -- Query the Memory Vault
@@ -11,8 +11,9 @@ $ARGUMENTS is the natural-language query string.
 
 ## Step 1 -- Resolve SYNTHEX_ROOT
 
-```
-SYNTHEX_ROOT = $CLAUDE_PROJECT_DIR  (if set)  else $PWD
+```bash
+SYNTHEX_ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
+export SYNTHEX_ROOT
 ```
 
 ## Step 2 -- Try memory-graph MCP (primary path)
@@ -59,13 +60,23 @@ else
 fi
 ```
 
-## Step 4 -- Search knowledgebase for direct matches
+## Step 4 -- Search knowledgebase for content matches
 
-As a secondary source, search the knowledgebase files for keyword matches:
+As a secondary source, search the knowledgebase files for content matches using grep:
 
 ```bash
-find "$SYNTHEX_ROOT/knowledgebase" -type f \( -name "*.md" -o -name "*.txt" \) 2>/dev/null | head -10
-# Grep for the query terms in found files
+SYNTHEX_ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
+
+# Use grep -rl for recursive content search (matches file content, not just names)
+if [ -n "$ARGUMENTS" ] && [ "$ARGUMENTS" != "" ]; then
+  QUERY_SAFE="$(printf '%s' "$ARGUMENTS" | sed 's/[^a-zA-Z0-9_ -]//g')"
+  if [ -d "$SYNTHEX_ROOT/knowledgebase" ]; then
+    grep -rl -i "$QUERY_SAFE" "$SYNTHEX_ROOT/knowledgebase" --include="*.md" --include="*.txt" 2>/dev/null \
+      | head -20
+  else
+    echo "knowledgebase directory not found at $SYNTHEX_ROOT/knowledgebase"
+  fi
+fi
 ```
 
 ## Step 5 -- Report

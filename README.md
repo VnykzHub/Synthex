@@ -53,7 +53,7 @@ To pick up edits without restarting:
 - Docker (optional — only needed for the `docker_run` heavy-compute tool)
 - `sqlite3` and `jq` available on `$PATH` (for hook scripts)
 
-No Python packages are required at install time — the Memory Vault degrades gracefully through three tiers: chromadb → numpy cosine → pure-Python cosine. The hashing embedder has zero dependencies.
+No Python packages are required at install time — the Memory Vault degrades gracefully through four tiers: turbovec → chromadb → numpy cosine → pure-Python cosine. The hashing embedder has zero dependencies. `turbovec` is a verified, installable PyPI package (`pip install turbovec`) that provides the fastest vector index (`IdMapIndex`).
 
 ---
 
@@ -81,7 +81,7 @@ your-project/
 │   ├── papers/                 # PDF research papers, proofs
 │   └── models/                 # Trained ML weights, embeddings
 │
-├── agent-output/               # All agent work lands here. The ONLY writable zone.
+├── agent-output/               # All agent work lands here. READ + WRITE (agents read past output for context and write new results).
 │   ├── src/                    # Production code (Python, Rust, TypeScript…)
 │   ├── artifacts/              # Plots, 3D scenes, binaries
 │   └── reports/                # LaTeX PDFs, PPTX, HTML dashboards
@@ -289,7 +289,7 @@ The sandbox enforces a strict separation enforced by `sandbox-gate.sh` (a `PreTo
 |---|---|---|
 | `user-input/` | **Read-only** | Your raw materials — assignments, datasets, references. Agents can read but never modify. |
 | `knowledgebase/` | Read + Write | Shared reference — schemas, papers, models. Both you and agents maintain this. |
-| `agent-output/` | **Write-only** (the sole writable zone) | All agent work products. Code, artifacts, reports. |
+| `agent-output/` | Read + Write | All agent work products. Agents read past output for context and write new results. Code, artifacts, reports. |
 | `logs/` | System only | SQLite DBs, vector index, archives. Agents never write here directly — hooks and monitors do. |
 
 **Permissive mode:** set `SYNTHEX_SANDBOX_MODE=permissive` in your environment to disable the sandbox gate (for development or trusted workflows).
@@ -302,7 +302,7 @@ Three bundled MCP servers provide computation, memory, and visualization. All st
 
 ### Memory & Graph (`mcp__plugin_synthex_memory-graph__*`)
 
-The Memory Vault. Backed by SQLite (`intents.db`, `state_ledger.db`) and a vector store (chroma → numpy cosine → pure-Python cosine fallback, zero-dependency capable).
+The Memory Vault. Backed by SQLite (`intents.db`, `state_ledger.db`) and a vector store (turbovec → chroma → numpy cosine → pure-Python cosine fallback, zero-dependency capable).
 
 | Tool | Purpose |
 |---|---|
@@ -391,7 +391,7 @@ Hooks drive the lifecycle: `sandbox-gate.sh` enforces the sandbox before every t
 
 ```
 synthex-plugin/
-├── .claude-plugin/plugin.json   # manifest (name, version, MCP servers, userConfig)
+├── .claude-plugin/plugin.json   # manifest (name, version, MCP servers)
 ├── .mcp.json                    # 3 bundled MCP server definitions
 ├── hooks/
 │   ├── hooks.json               # PreToolUse·PostToolUse·UserPromptSubmit·Subagent*·Task*
@@ -452,17 +452,25 @@ node --check mcp-servers/visualization/server.js  # must exit 0
 
 ---
 
+## Runtime sandbox root resolution
+
+The Synthex runtime data sandbox lives in the **user's project**, not inside the plugin directory. The base directory is resolved in the following order:
+
+1. `$CLAUDE_PROJECT_DIR` — set by Claude Code when using `--plugin-dir` or running in a project context
+2. Hook stdin `.cwd` — for hook scripts, the `cwd` field from the hook invocation payload
+3. `$PWD` — current working directory
+
+This resolution chain means Synthex works correctly in both `--plugin-dir` dev mode and marketplace installs. All paths (`user-input/`, `agent-output/`, `knowledgebase/`, `logs/`) are relative to this root.
+
 ## Configuration
 
-Synthex exposes three user-configurable options via `plugin.json` → `userConfig`:
+Synthex is configured exclusively via environment variables. There is no `userConfig` block in `plugin.json` — the Claude Code harness does not process it.
 
-| Setting | Values | Default | Effect |
+| Variable | Values | Default | Effect |
 |---|---|---|---|
-| `sandbox_mode` | `strict`, `permissive` | `strict` | `strict` blocks all writes outside `agent-output/` |
-| `vector_db_backend` | `chroma`, `lancedb`, `faiss`, `turbovec` | `chroma` | Memory Vault backend. `turbovec` is unverified — falls back to `chroma` |
-| `max_context_chunks` | 1–10 | 3 | Number of memory chunks injected via `UserPromptSubmit` |
-
-Configure them when enabling the plugin, or via environment variables: `SYNTHEX_SANDBOX_MODE`, `SYNTHEX_VECTOR_BACKEND`, `SYNTHEX_ARCHIVIST_INTERVAL` (seconds, default 300).
+| `SYNTHEX_SANDBOX_MODE` | `strict`, `permissive` | `strict` | `strict` blocks all writes outside `agent-output/` |
+| `SYNTHEX_VECTOR_BACKEND` | `turbovec`, `chroma`, `lancedb`, `faiss` | `chroma` | Memory Vault backend. Falls through: turbovec → chroma → numpy cosine → pure-Python cosine |
+| `SYNTHEX_ARCHIVIST_INTERVAL` | integer (seconds) | `300` | Audit Archivist snapshot interval |
 
 ---
 
@@ -477,6 +485,7 @@ Configure them when enabling the plugin, or via environment variables: `SYNTHEX_
 - Run `/hooks` in Claude Code and confirm the hook appears under the correct event.
 - Test the script manually: pipe sample JSON to it and check the exit code.
 - Ensure scripts are executable: `chmod +x hooks/scripts/*.sh`
+- On Windows, `chmod +x` has no effect — use `git add --chmod=+x hooks/scripts/*.sh` before committing, or set `icacls hooks\scripts\*.sh /grant Everyone:RX` in PowerShell. Ensure Git Bash's `.sh` file association is configured.
 
 **Sandbox gate blocking legit writes:**
 - Verify the file path is under `<project>/agent-output/`.
@@ -485,8 +494,8 @@ Configure them when enabling the plugin, or via environment variables: `SYNTHEX_
 
 **Memory Vault returns no results:**
 - Run `/synthex:synthex-init` to ensure the DBs exist.
-- Index some content: `python mcp-servers/memory-graph/synthex_memory.py index <file>`.
-- Verify: `python mcp-servers/memory-graph/synthex_memory.py retrieve --query "test"`.
+- Index some content: `python <plugin-root>/mcp-servers/memory-graph/synthex_memory.py index <file>`.
+- Verify: `python <plugin-root>/mcp-servers/memory-graph/synthex_memory.py retrieve --query "test"`.
 - The hashing embedder (fallback) produces deterministic but lower-quality vectors than sentence-transformers. Install `sentence-transformers` for semantic-quality retrieval.
 
 **MCP servers don't start:**

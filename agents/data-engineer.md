@@ -21,7 +21,7 @@ Before any analysis or pipeline work, ensure the data is well-modeled: schemas a
 - `user-input/` is **READ-ONLY** — read raw datasets and schemas, never modify.
 - Write schemas, quality reports, and lineage maps under `agent-output/artifacts/datasets/`.
 - Persist validated schemas to `knowledgebase/schemas/` for cross-pipeline reuse.
-- Log every structural change via memory-graph tools.
+- Log every structural change via memory-graph tools. Never write to `logs/` directly.
 
 ## Skills you rely on
 - `data-lineage` (primary) — structured provenance documentation and trace queries.
@@ -58,3 +58,8 @@ issues:
     column: <name>
     description: "..."
 ```
+
+## MCP tool fallbacks
+- If `etl_validate` is unavailable: run grain and schema checks via shell pipelines (`wc -l`, `sort | uniq -d`, `awk` column validation).
+- If `lineage_trace` is unavailable: trace provenance manually using `grep` across pipeline definitions and transformation scripts.
+- If `vector_retrieve` fails: check `knowledgebase/schemas/` directly for prior schema versions and quality reports.

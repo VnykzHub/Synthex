@@ -35,8 +35,8 @@ You are the Task Tracking specialist for Synthex. You manage task lifecycles usi
 
 ## Concrete example
 When a user says "Implement login endpoint, assign it to the Software Engineer":
-1. Call `task_list(status="in-progress", assigned_to="SoftwareEngineer")` to check for existing work.
-2. Call `task_create(title="Implement /api/login endpoint", priority="high", assigned_to="SoftwareEngineer")`. Record the returned `id`.
+1. Call `task_list(status="in-progress")` to check for existing work.
+2. Call `task_create(title="Implement /api/login endpoint", priority="high")`. Record the returned `id`.
 3. Call `task_update(id="<returned-id>", status="in-progress")` when work starts.
 4. When a PR is opened, call `task_update(id="<returned-id>", status="pr")` with the PR URL in `log_intent` context.
 5. When merged and deployed, transition to `completed` and reference `agent-output/src/` in the closing log entry.

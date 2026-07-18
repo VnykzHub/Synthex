@@ -72,10 +72,10 @@ def resolve_synthex_root() -> str:
     return os.environ.get("PWD") or os.getcwd()
 
 
-def resolve_logs_dir(db_path: str | None) -> str:
-    """Explicit --db-path wins (it points at the logs dir); else SYNTHEX_ROOT/logs."""
-    if db_path:
-        return db_path
+def resolve_logs_dir(logs_dir: str | None) -> str:
+    """Explicit --logs-dir wins; else SYNTHEX_ROOT/logs."""
+    if logs_dir:
+        return logs_dir
     return os.path.join(resolve_synthex_root(), "logs")
 
 
@@ -113,23 +113,75 @@ def query_task_counts(intents_db: str) -> tuple[int, int, int]:
     return total, pending, in_progress
 
 
+def query_pipeline_phases(state_db: str) -> tuple[str | None, int, int]:
+    """Return (current_phase, phases_done, phases_total) if pipeline_phases table exists, else (None, 0, 0)."""
+    try:
+        with sqlite3.connect(state_db) as con:
+            cur = con.execute(
+                "SELECT name FROM sqlite_master "
+                "WHERE type='table' AND name='pipeline_phases'"
+            )
+            if not cur.fetchone():
+                return None, 0, 0
+            cur = con.execute(
+                "SELECT phase_name, phase_order, total_phases "
+                "FROM pipeline_phases WHERE status='active' LIMIT 1"
+            )
+            row = cur.fetchone()
+            if row:
+                return row[0], row[1], row[2]
+    except sqlite3.Error:
+        pass
+    return None, 0, 0
+
+
+def query_experiment_iterations(state_db: str) -> int:
+    """Count prior state.snapshot events for this archivist to derive iteration number."""
+    try:
+        with sqlite3.connect(state_db) as con:
+            cur = con.execute(
+                "SELECT COUNT(*) FROM state_ledger "
+                "WHERE agent='audit-archivist' AND event_type='state.snapshot'"
+            )
+            row = cur.fetchone()
+            return (row[0] or 0) + 1
+    except sqlite3.Error:
+        return 1
+
+
 def tick(intents_db: str, state_db: str) -> str:
     """Run one snapshot: read counts, write ledger row, return the status line."""
     total, pending, in_progress = query_task_counts(intents_db)
+    phase_name, phase_done, phase_total = query_pipeline_phases(state_db)
+    iteration = query_experiment_iterations(state_db)
     ts = utc_now_iso()
-    details = json.dumps(
-        {
-            "tasks_total": total,
-            "pending": pending,
-            "in_progress": in_progress,
-            "ts": ts,
-        }
-    )
+
+    details_dict = {
+        "tasks_total": total,
+        "pending": pending,
+        "in_progress": in_progress,
+        "experiment_iterations": iteration,
+        "ts": ts,
+    }
+    if phase_name:
+        details_dict["phase"] = phase_name
+        details_dict["phase_done"] = phase_done
+        details_dict["phase_total"] = phase_total
+
+    details = json.dumps(details_dict)
+
     with sqlite3.connect(state_db) as con:
         con.execute(
             "INSERT INTO state_ledger (ts, agent, event_type, details) "
             "VALUES (?, ?, ?, ?)",
             (ts, "audit-archivist", "state.snapshot", details),
+        )
+
+    if phase_name:
+        return (
+            f"[archivist] phase={phase_name} {phase_done}/{phase_total} done, "
+            f"{total} tasks "
+            f"({in_progress} in-progress, {pending} pending) @ {ts}"
         )
     return (
         f"[archivist] {total} tasks "
@@ -153,7 +205,7 @@ def resolve_interval(cli_interval: int | None) -> int:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Synthex Audit Archivist monitor.")
     ap.add_argument(
-        "--db-path",
+        "--logs-dir",
         default=None,
         help="Logs directory holding the SQLite DBs "
         "(default: $SYNTHEX_ROOT/logs).",
@@ -172,7 +224,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = ap.parse_args(argv)
 
-    logs_dir = resolve_logs_dir(args.db_path)
+    logs_dir = resolve_logs_dir(args.logs_dir)
     interval = resolve_interval(args.interval)
 
     # Ensure schema up front so a bad path fails loudly before the loop.

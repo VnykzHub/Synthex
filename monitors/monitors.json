@@ -2,6 +2,6 @@
   {
     "name": "audit-archivist",
     "description": "Continuous state/intent telemetry daemon. Emits a status line per snapshot.",
-    "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/monitors/audit-archivist/archivist.py\" --db-path \"${CLAUDE_PLUGIN_ROOT}/../logs\""
+    "command": "python \"${CLAUDE_PLUGIN_ROOT}/monitors/audit-archivist/archivist.py\""
   }
 ]

@@ -30,15 +30,19 @@ def _parse_fm(path: Path) -> tuple[dict[str, str], list[str]]:
             errors.append(f"tab in fm: {li!r}")
         if ":" in li:
             k, _, v = li.partition(":")
-            k, v = k.strip(), v.strip().strip('"').strip("'")
+            k = k.strip()
+            v = v.strip()
+            # Strip matching quotes only (both single or both double)
+            if len(v) >= 2 and ((v[0] == v[-1] == '"') or (v[0] == v[-1] == "'")):
+                v = v[1:-1]
             if k in fields:
                 errors.append(f"duplicate key {k!r}")
             fields[k] = v
     return fields, errors
 
 
-VALID_AGENT = {"name", "description", "model", "tools"}
-VALID_SKILL = {"name", "description", "disable-model-invocation", "allowed-tools"}
+VALID_AGENT = {"name", "description", "model", "tools", "skills"}
+VALID_SKILL = {"name", "description", "disable-model-invocation", "allowed-tools", "superseded_by"}
 CMD_SKILLS = {"synthex-init", "delegate", "theory", "pipeline", "report",
               "experiment", "status", "audit", "memory"}
 DOMAIN_SKILLS = {"task-tracking", "knowledge-graph", "data-lineage",
@@ -49,7 +53,10 @@ DOMAIN_SKILLS = {"task-tracking", "knowledge-graph", "data-lineage",
 class TestAgentFM(unittest.TestCase):
 
     def _files(self):
-        return sorted((ROOT / "agents").glob("*.md"))
+        agents_dir = ROOT / "agents"
+        if not agents_dir.is_dir():
+            return []
+        return sorted(agents_dir.glob("*.md"))
 
     def test_all_have_fm(self):
         for p in self._files():
@@ -60,12 +67,16 @@ class TestAgentFM(unittest.TestCase):
 
     def test_models_valid(self):
         for p in self._files():
-            m = _parse_fm(p)[0]["model"]
+            f, _ = _parse_fm(p)
+            m = f.get("model")
+            if m is None:
+                self.fail(f"{p.name}: missing model field")
             self.assertIn(m, {"opus", "sonnet", "haiku"}, f"{p.name}: {m}")
 
     def test_no_unknown(self):
         for p in self._files():
-            for k in _parse_fm(p)[0]:
+            f, _ = _parse_fm(p)
+            for k in f:
                 self.assertIn(k, VALID_AGENT, f"{p.name}: unknown {k}")
 
     def test_name_matches_file(self):
@@ -81,7 +92,10 @@ class TestAgentFM(unittest.TestCase):
 class TestSkillFM(unittest.TestCase):
 
     def _files(self):
-        return sorted((ROOT / "skills").glob("*/SKILL.md"))
+        skills_dir = ROOT / "skills"
+        if not skills_dir.is_dir():
+            return []
+        return sorted(skills_dir.glob("*/SKILL.md"))
 
     def test_all_have_fm(self):
         for p in self._files():
@@ -98,8 +112,11 @@ class TestSkillFM(unittest.TestCase):
     def test_cmd_skills_disable_invocation(self):
         for p in self._files():
             if p.parent.name in CMD_SKILLS:
-                self.assertIn("disable-model-invocation", _parse_fm(p)[0],
+                f, _ = _parse_fm(p)
+                self.assertIn("disable-model-invocation", f,
                               f"{p.parent.name}: should set disable-model-invocation: true")
+                self.assertEqual(f.get("disable-model-invocation"), "true",
+                                 f"{p.parent.name}: disable-model-invocation should be 'true'")
 
     def test_name_matches_folder(self):
         for p in self._files():

@@ -36,7 +36,7 @@ print(f'  {ok} JSON files valid')
 
 run "py-compile" python -c "
 import compileall, sys
-sys.exit(0 if compileall.compile_dir('.', quiet=1, force=True) else 0)
+sys.exit(0 if compileall.compile_dir('.', quiet=1, force=True) else 1)
 print('  all .py compile OK')
 "
 

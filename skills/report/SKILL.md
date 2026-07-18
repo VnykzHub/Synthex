@@ -1,8 +1,8 @@
 ---
 name: report
 description: "/synthex:report --type ppt|html|pdf -- Synthesize agent-output/reports into a deliverable using Documentation Engineer + visualization MCP."
+allowed-tools: Read(*) Bash(sqlite3 *) Bash(echo *) Bash(find *) Bash(mkdir *) Bash(test *)
 disable-model-invocation: true
-allowed-tools: Bash(sqlite3 *) Bash(echo *) Bash(find *) Bash(mkdir *) Bash(test *)
 ---
 
 # /synthex:report --type ppt|html|pdf -- Synthesize results into a deliverable
@@ -11,8 +11,8 @@ $ARGUMENTS should contain `--type <format>` and optionally a topic or source dir
 
 ## Step 1 -- Resolve SYNTHEX_ROOT and parse arguments
 
-```
-SYNTHEX_ROOT = $CLAUDE_PROJECT_DIR  (if set)  else $PWD
+```bash
+SYNTHEX_ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
 ```
 
 Parse $ARGUMENTS for:
@@ -74,9 +74,23 @@ Write to `agent-output/reports/report-<topic>.pdf`.
 ## Step 5 -- Log and report
 
 ```bash
-DETAILS="{\"format\":\"<type>\",\"path\":\"agent-output/...\"}"
-sqlite3 "$SYNTHEX_ROOT/logs/state_ledger.db" \
-  "INSERT INTO state_ledger (agent, event_type, details) VALUES ('documentation-engineer', 'report.generate', '$DETAILS');"
+SYNTHEX_ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
+
+# Verify DB and table exist before inserting
+if [ ! -f "$SYNTHEX_ROOT/logs/state_ledger.db" ]; then
+  echo "WARNING: state_ledger.db not found. Skipping audit log." >&2
+else
+  TABLE_OK=$(sqlite3 "$SYNTHEX_ROOT/logs/state_ledger.db" "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='state_ledger';")
+  if [ "$TABLE_OK" -eq 0 ]; then
+    echo "WARNING: state_ledger table not found. Skipping audit log." >&2
+  else
+    DETAILS="{\"format\":\"<type>\",\"path\":\"agent-output/...\"}"
+    # Escape single quotes for SQLite to prevent injection
+    DETAILS_ESC="$(printf '%s' "$DETAILS" | sed "s/'/''/g")"
+    sqlite3 "$SYNTHEX_ROOT/logs/state_ledger.db" \
+      "INSERT INTO state_ledger (agent, event_type, details) VALUES ('documentation-engineer', 'report.generate', '$DETAILS_ESC');"
+  fi
+fi
 ```
 
 Report the output path and format to the user.

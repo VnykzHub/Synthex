@@ -22,10 +22,12 @@ synthex_resolve_root() {
 # Create logs/ and apply the schema to intents.db + state_ledger.db.
 synthex_init_dbs() {
   local root="$1"
+  [ -z "$root" ] && return 1
   local logs="$root/logs"
   mkdir -p "$logs"
 
-  sqlite3 "$logs/intents.db" <<'SQL'
+  sqlite3 -cmd '.timeout 5000' "$logs/intents.db" <<'SQL'
+PRAGMA journal_mode=WAL;
 CREATE TABLE IF NOT EXISTS intents (
   id        INTEGER PRIMARY KEY AUTOINCREMENT,
   ts        TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
@@ -47,7 +49,8 @@ CREATE TABLE IF NOT EXISTS tasks (
 );
 SQL
 
-  sqlite3 "$logs/state_ledger.db" <<'SQL'
+  sqlite3 -cmd '.timeout 5000' "$logs/state_ledger.db" <<'SQL'
+PRAGMA journal_mode=WAL;
 CREATE TABLE IF NOT EXISTS state_ledger (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   ts         TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
@@ -67,5 +70,5 @@ SQL
 if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
   ROOT="$(synthex_resolve_root "${1:-}")"
   synthex_init_dbs "$ROOT"
-  echo "synthex: initialized DBs under $ROOT/logs" >&2
+  printf 'synthex: initialized DBs under %s/logs\n' "$ROOT" >&2
 fi

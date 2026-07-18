@@ -1,7 +1,9 @@
 {
   "name": "synthex",
-  "version": "0.1.0",
-  "description": "Enterprise multi-agent framework for software/data engineering, PhD-level math/CS, and project management with a zero-write sandbox and a vector Memory Vault.",
+  "version": "2.0.0",
+  "description": "Enterprise-grade multi-agent framework with pipeline orchestration and continuous research loop. 24 specialist agents across 7 divisions, 43 skills, 3 MCP servers, vector Memory Vault, zero-write sandbox, and always-on audit daemon.",
+  "homepage": "https://github.com/synthex/synthex-plugin",
+  "repository": { "type": "git", "url": "https://github.com/synthex/synthex-plugin.git" },
   "author": { "name": "Synthex Team" },
   "license": "MIT",
   "keywords": [
@@ -11,23 +13,5 @@
   "skills": "./skills/",
   "agents": "./agents/",
   "hooks": "./hooks/hooks.json",
-  "mcpServers": "./.mcp.json",
-  "userConfig": {
-    "sandbox_mode": {
-      "type": "string",
-      "enum": ["strict", "permissive"],
-      "default": "strict",
-      "description": "'strict' blocks all writes outside agent-output/."
-    },
-    "vector_db_backend": {
-      "type": "string",
-      "enum": ["turbovec", "chroma", "lancedb", "faiss"],
-      "default": "chroma",
-      "description": "Memory Vault backend. NOTE: 'turbovec' is unverified (see BUILD_PLAN T4.3); default is a known-available store until confirmed."
-    },
-    "max_context_chunks": {
-      "type": "integer", "minimum": 1, "maximum": 10, "default": 3,
-      "description": "Memory chunks injected via UserPromptSubmit."
-    }
-  }
+  "mcpServers": "./.mcp.json"
 }

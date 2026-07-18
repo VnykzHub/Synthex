@@ -20,10 +20,12 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
 from pathlib import Path
 from typing import Any
 
@@ -66,15 +68,8 @@ def _resolve_under_root(path: str) -> Path:
 _SYMPY_KINDS = {"auto", "solve", "simplify", "integrate", "diff", "factor"}
 
 
-def sympy_solve(expression: str, kind: str = "auto") -> dict[str, Any]:
-    """Symbolic math via sympy.
-
-    kind in {auto, solve, simplify, integrate, diff, factor}. 'auto' picks a
-    sensible operation: an equation (or bare polynomial) is solved, otherwise
-    the expression is simplified.
-
-    Returns {result, latex, steps}.
-    """
+def _sympy_solve_impl(expression: str, kind: str = "auto") -> dict[str, Any]:
+    """Inner implementation of sympy_solve (runs in thread pool for timeout)."""
     try:
         import sympy
         from sympy import Eq, diff, factor, integrate, latex, simplify, solve
@@ -100,7 +95,8 @@ def sympy_solve(expression: str, kind: str = "auto") -> dict[str, Any]:
         return parse_expr(text, evaluate=True)
 
     try:
-        has_eq = "=" in expression and "==" not in expression
+        # Use stable regex to detect equations: single '=' not preceded by !<>= and not followed by =
+        has_eq = bool(re.search(r'(?<![!<>=])={1}(?!=)', expression))
         # Build an expression / equation object.
         if has_eq:
             lhs_s, rhs_s = expression.split("=", 1)
@@ -161,6 +157,33 @@ def sympy_solve(expression: str, kind: str = "auto") -> dict[str, Any]:
         return {"result": None, "latex": "", "steps": steps}
 
 
+def sympy_solve(expression: str, kind: str = "auto") -> dict[str, Any]:
+    """Symbolic math via sympy. Runs with a 30-second timeout.
+
+    kind in {auto, solve, simplify, integrate, diff, factor}. 'auto' picks a
+    sensible operation: an equation (or bare polynomial) is solved, otherwise
+    the expression is simplified.
+
+    Returns {result, latex, steps}.
+    """
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        future = pool.submit(_sympy_solve_impl, expression, kind)
+        try:
+            return future.result(timeout=30)
+        except FuturesTimeout:
+            return {
+                "result": None,
+                "latex": "",
+                "steps": ["sympy_solve timed out after 30s"],
+            }
+        except Exception as exc:
+            return {
+                "result": None,
+                "latex": "",
+                "steps": [f"sympy_solve error: {exc}"],
+            }
+
+
 # --------------------------------------------------------------------------- #
 # Tool: profile_script
 # --------------------------------------------------------------------------- #
@@ -199,6 +222,7 @@ def profile_script(path: str, args: list[str] | None = None) -> dict[str, Any]:
             cmd,
             capture_output=True,
             text=True,
+            errors="replace",
             timeout=300,
             cwd=str(synthex_root()),
         )
@@ -207,7 +231,7 @@ def profile_script(path: str, args: list[str] | None = None) -> dict[str, Any]:
         stdout = exc.stdout or ""
         if isinstance(stdout, bytes):
             stdout = stdout.decode(errors="replace")
-        stderr = "profile timed out after 300s"
+        stderr = exc.stderr or "profile timed out after 300s"
         rc = -1
     except Exception as exc:
         stdout, stderr, rc = "", f"failed to launch profiler: {exc}", -1
@@ -294,8 +318,9 @@ def etl_validate(path: str, expectations: str = "") -> dict[str, Any]:
 
     suffix = target.suffix.lower()
     columns: list[str] = []
-    rows_data: list[dict[str, str]] = []
     row_count = 0
+    grain_ok: bool | None = None
+    dupes = 0
 
     if suffix in (".parquet", ".pq"):
         try:
@@ -304,7 +329,19 @@ def etl_validate(path: str, expectations: str = "") -> dict[str, Any]:
             df = pd.read_parquet(target)
             columns = list(map(str, df.columns))
             row_count = int(len(df))
-            rows_data = df.astype(str).to_dict(orient="records")
+            # Grain check via DataFrame API (no per-row copy needed)
+            if key_cols:
+                missing = [c for c in key_cols if c not in columns]
+                if missing:
+                    issues.append(f"key columns not found: {missing}")
+                    grain_ok = False
+                else:
+                    dupes = int(df.duplicated(subset=key_cols).sum())
+                    grain_ok = dupes == 0
+                    if dupes:
+                        issues.append(
+                            f"grain violated: {dupes} duplicate rows on key {key_cols}"
+                        )
         except Exception as exc:
             return {
                 "rows": 0,
@@ -319,9 +356,28 @@ def etl_validate(path: str, expectations: str = "") -> dict[str, Any]:
             with open(target, newline="", encoding="utf-8-sig") as fh:
                 reader = csv.DictReader(fh)
                 columns = list(reader.fieldnames or [])
+                # Grain check folded into single read loop (no rows_data list)
+                if key_cols:
+                    missing = [c for c in key_cols if c not in columns]
+                    if missing:
+                        issues.append(f"key columns not found: {missing}")
+                        grain_ok = False
+                    else:
+                        seen: set[tuple] = set()
                 for r in reader:
-                    rows_data.append(r)
                     row_count += 1
+                    if key_cols and grain_ok is not False:
+                        composite = tuple(r.get(c) for c in key_cols)
+                        if composite in seen:
+                            dupes += 1
+                        else:
+                            seen.add(composite)
+                if key_cols and grain_ok is not False:
+                    grain_ok = dupes == 0
+                    if dupes:
+                        issues.append(
+                            f"grain violated: {dupes} duplicate rows on key {key_cols}"
+                        )
         except Exception as exc:
             return {
                 "rows": 0,
@@ -329,28 +385,6 @@ def etl_validate(path: str, expectations: str = "") -> dict[str, Any]:
                 "grain_ok": None,
                 "issues": issues + [f"failed reading CSV: {exc}"],
             }
-
-    # Grain / uniqueness check.
-    grain_ok: bool | None = None
-    if key_cols:
-        missing = [c for c in key_cols if c not in columns]
-        if missing:
-            issues.append(f"key columns not found: {missing}")
-            grain_ok = False
-        else:
-            seen: set[tuple] = set()
-            dupes = 0
-            for r in rows_data:
-                composite = tuple(r.get(c) for c in key_cols)
-                if composite in seen:
-                    dupes += 1
-                else:
-                    seen.add(composite)
-            grain_ok = dupes == 0
-            if dupes:
-                issues.append(
-                    f"grain violated: {dupes} duplicate rows on key {key_cols}"
-                )
 
     if not columns:
         issues.append("no columns detected (empty file or missing header)")
@@ -386,12 +420,20 @@ def docker_run(
 
     argv = ["docker", "run", "--rm"]
     for m in mounts:
-        argv += ["-v", str(m)]
+        parts = m.split(":", 1)
+        src = parts[0]
+        # Validate that mount source is within SYNTHEX_ROOT
+        try:
+            src_p = _resolve_under_root(src)
+        except ValueError:
+            return {"error": f"mount source {src!r} is outside SYNTHEX_ROOT"}
+        resolved = f"{src_p}:{parts[1]}" if len(parts) > 1 else str(src_p)
+        argv += ["-v", resolved]
     argv.append(image)
     argv += cmd
 
     try:
-        proc = subprocess.run(argv, capture_output=True, text=True, timeout=600)
+        proc = subprocess.run(argv, capture_output=True, text=True, errors="replace", timeout=600)
         return {
             "stdout": proc.stdout,
             "stderr": proc.stderr,
@@ -420,7 +462,7 @@ def build_server():
         return sympy_solve(expression, kind)
 
     @server.tool(name="profile_script")
-    def profile_script_tool(path: str, args: list[str] = []) -> dict:
+    def profile_script_tool(path: str, args: list[str] | None = None) -> dict:
         """Profile `python <path> <args>` under cProfile; report top functions."""
         return profile_script(path, args)
 
@@ -430,7 +472,7 @@ def build_server():
         return etl_validate(path, expectations)
 
     @server.tool(name="docker_run")
-    def docker_run_tool(image: str, cmd: list[str] = [], mounts: list[str] = []) -> dict:
+    def docker_run_tool(image: str, cmd: list[str] | None = None, mounts: list[str] | None = None) -> dict:
         """Run a container via `docker run` (graceful if docker absent)."""
         return docker_run(image, cmd, mounts)
 

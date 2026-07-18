@@ -32,62 +32,62 @@ from synthex_memory import (
 mcp = FastMCP("memory-graph")
 
 
-@mcp.tool()
+@mcp.tool(name="vector_retrieve")
 def tool_vector_retrieve(query: str, top_k: int = 5, scope: str = "all") -> list[dict]:
     """Semantic search across the Memory Vault. Returns top-k chunks with scores."""
     return vector_retrieve(query, top_k=top_k, scope=scope)
 
 
-@mcp.tool()
+@mcp.tool(name="vector_index")
 def tool_vector_index(path: str) -> dict:
     """Index a file into the vector store. Returns {indexed, source}."""
     return vector_index(path)
 
 
-@mcp.tool()
-def tool_kg_add(subject: str, predicate: str, object: str, source: str = "") -> dict:
+@mcp.tool(name="kg_add")
+def tool_kg_add(subject: str, predicate: str, obj: str, source: str = "") -> dict:
     """Add a triple (subject, predicate, object) to the knowledge graph."""
-    return kg_add(subject, predicate, object, source)
+    return kg_add(subject, predicate, obj, source)
 
 
-@mcp.tool()
-def tool_kg_query(subject: str = "", predicate: str = "", object: str = "") -> list[dict]:
+@mcp.tool(name="kg_query")
+def tool_kg_query(subject: str = "", predicate: str = "", obj: str = "") -> list[dict]:
     """Query knowledge graph triples. Each argument filters by LIKE match."""
-    return kg_query(subject, predicate, object)
+    return kg_query(subject, predicate, obj)
 
 
-@mcp.tool()
+@mcp.tool(name="lineage_trace")
 def tool_lineage_trace(target: str) -> list[dict]:
     """Trace data lineage for *target* across intents and kg_triples."""
     return lineage_trace(target)
 
 
-@mcp.tool()
+@mcp.tool(name="log_intent")
 def tool_log_intent(agent: str, action: str, why: str, task_id: str = "",
                     context: str = "") -> dict:
     """Record an agent decision in intents.db. Returns {id, ts}."""
     return log_intent(agent, action, why, task_id, context)
 
 
-@mcp.tool()
+@mcp.tool(name="task_create")
 def tool_task_create(title: str, priority: str = "medium", assigned_to: str = "") -> dict:
     """Create a task. Returns {id, title, status}."""
     return task_create(title, priority, assigned_to)
 
 
-@mcp.tool()
+@mcp.tool(name="task_update")
 def tool_task_update(id: str, status: str) -> dict:
     """Update task status. Returns {id, status}."""
     return task_update(id, status)
 
 
-@mcp.tool()
+@mcp.tool(name="task_list")
 def tool_task_list(status: str = "") -> list[dict]:
     """List tasks, optionally filtered by status."""
     return task_list(status)
 
 
-@mcp.tool()
+@mcp.tool(name="drain_queue")
 def tool_drain_queue() -> dict:
     """Consume logs/index_queue.jsonl and index every path."""
     return drain_queue()

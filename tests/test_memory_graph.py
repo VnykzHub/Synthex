@@ -20,7 +20,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "mcp-servers" / "memory-graph"))
+_memory_graph_path = str(Path(__file__).resolve().parent.parent / "mcp-servers" / "memory-graph")
+sys.path.insert(0, _memory_graph_path)
 
 import synthex_memory as sm  # noqa: E402
 
@@ -34,6 +35,8 @@ class TmpCase(unittest.TestCase):
 
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
+        self._old_claude = os.environ.get("CLAUDE_PROJECT_DIR")
+        self._old_vector = os.environ.get("SYNTHEX_VECTOR_BACKEND")
         os.environ["CLAUDE_PROJECT_DIR"] = self.tmp
         sm._store = None
         sm._encode_fn = None
@@ -41,6 +44,14 @@ class TmpCase(unittest.TestCase):
     def tearDown(self):
         import shutil
         shutil.rmtree(self.tmp, ignore_errors=True)
+        if self._old_claude is not None:
+            os.environ["CLAUDE_PROJECT_DIR"] = self._old_claude
+        else:
+            os.environ.pop("CLAUDE_PROJECT_DIR", None)
+        if self._old_vector is not None:
+            os.environ["SYNTHEX_VECTOR_BACKEND"] = self._old_vector
+        else:
+            os.environ.pop("SYNTHEX_VECTOR_BACKEND", None)
 
     def _mkfile(self, name: str, content: str) -> Path:
         p = Path(self.tmp) / name
@@ -86,6 +97,14 @@ class TestRootAndDB(TmpCase):
         conn.close()
         for t in ("state_ledger", "kg_triples"):
             self.assertIn(t, names)
+
+    def test_column_schema(self):
+        sm.init_db()
+        conn = sqlite3.connect(str(Path(self.tmp) / "logs" / "intents.db"))
+        cols = {r[1]: r for r in conn.execute("PRAGMA table_info(intents)").fetchall()}
+        conn.close()
+        for col_name in ("agent", "action", "why"):
+            self.assertIsNotNone(cols.get(col_name), f"missing column {col_name}")
 
 
 # --------------------------------------------------------------------------- #
@@ -227,7 +246,10 @@ class TestVectorIndex(TmpCase):
     def test_missing(self):
         r = sm.vector_index("/nonexistent/path.xyz", root=Path(self.tmp))
         self.assertEqual(r["indexed"], 0)
-        self.assertEqual(r["error"], "file_not_found")
+        # _resolve_under_root rejects paths outside root; accept either error
+        err = r.get("error", "")
+        self.assertTrue(err == "file_not_found" or "outside" in err or "__root__" in err,
+                        f"unexpected error: {err}")
 
     def test_empty_file(self):
         self._mkfile("empty.txt", "")
@@ -272,10 +294,19 @@ class TestVectorRetrieve(TmpCase):
     def test_empty_store(self):
         # fresh temp without indexed content
         t2 = tempfile.mkdtemp()
-        os.environ["CLAUDE_PROJECT_DIR"] = t2
-        sm._store = None
-        sm._encode_fn = None
-        self.assertEqual(sm.vector_retrieve("anything", root=Path(t2)), [])
+        try:
+            old_claude = os.environ.get("CLAUDE_PROJECT_DIR")
+            os.environ["CLAUDE_PROJECT_DIR"] = t2
+            sm._store = None
+            sm._encode_fn = None
+            self.assertEqual(sm.vector_retrieve("anything", root=Path(t2)), [])
+        finally:
+            import shutil
+            shutil.rmtree(t2, ignore_errors=True)
+            if old_claude is not None:
+                os.environ["CLAUDE_PROJECT_DIR"] = old_claude
+            else:
+                os.environ.pop("CLAUDE_PROJECT_DIR", None)
 
     def test_empty_query(self):
         sm.vector_index(str(Path(self.tmp) / "ml.txt"), root=Path(self.tmp))
@@ -300,7 +331,7 @@ class TestKnowledgeGraph(TmpCase):
 
     def test_partial_match(self):
         sm.kg_add("customer_v2", "has_schema", "orders_schema.yaml", root=Path(self.tmp))
-        r = sm.kg_query(object="schema", root=Path(self.tmp))
+        r = sm.kg_query(obj="schema", root=Path(self.tmp))
         self.assertGreaterEqual(len(r), 1)
 
     def test_no_match(self):
@@ -385,6 +416,14 @@ class TestDrainQueue(TmpCase):
     def test_missing_file(self):
         result = sm.drain_queue(root=Path(self.tmp))
         self.assertEqual(result["processed"], 0)
+
+
+def tearDownModule():
+    """Clean up sys.path after tests."""
+    try:
+        sys.path.remove(_memory_graph_path)
+    except ValueError:
+        pass
 
 
 if __name__ == "__main__":

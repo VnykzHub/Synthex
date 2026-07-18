@@ -20,18 +20,21 @@ CWD="$(printf '%s' "$INPUT" | jq -r '.cwd // ""' 2>/dev/null || true)"
 ROOT="$(synthex_resolve_root "$CWD")"
 synthex_init_dbs "$ROOT"
 
-TS="$(date -u '+%Y-%m-%dT%H:%M:%S.%3NZ')"
-
 # Build the details JSON, including session_id if present
 if [ -n "$SESSION_ID" ]; then
-  DETAILS="{\"ts\":\"$TS\",\"session_id\":\"$SESSION_ID\"}"
+  DETAILS="{\"session_id\":\"$SESSION_ID\"}"
 else
-  DETAILS="{\"ts\":\"$TS\"}"
+  DETAILS="{}"
 fi
 
-sqlite3 "$ROOT/logs/state_ledger.db" <<SQL
+# Escape single quotes for SQLite to prevent injection
+AGENT_TYPE_ESC="$(printf '%s' "$AGENT_TYPE" | sed "s/'/''/g")"
+DETAILS_ESC="$(printf '%s' "$DETAILS" | sed "s/'/''/g")"
+
+command -v sqlite3 >/dev/null 2>&1 || exit 0
+sqlite3 -cmd ".timeout 5000" "$ROOT/logs/state_ledger.db" <<SQL
 INSERT INTO state_ledger(agent, event_type, details)
-VALUES('$AGENT_TYPE', 'subagent.$PHASE', '$DETAILS');
+VALUES('$AGENT_TYPE_ESC', 'subagent.$PHASE', '$DETAILS_ESC');
 SQL
 
 exit 0

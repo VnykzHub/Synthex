@@ -11,23 +11,46 @@ $ARGUMENTS describes the experiment to run. May include parameters, hypotheses, 
 
 ## Step 1 -- Resolve SYNTHEX_ROOT
 
-```
-SYNTHEX_ROOT = $CLAUDE_PROJECT_DIR  (if set)  else $PWD
+```bash
+SYNTHEX_ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
+export SYNTHEX_ROOT
 ```
 
 ## Step 2 -- Log intent
 
+Always escape single quotes before inserting user-supplied text into SQLite. Verify DB/table exist before inserting.
+
 ```bash
+SYNTHEX_ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
+
+# Check intents.db/tasks table exist before inserting
+if [ ! -f "$SYNTHEX_ROOT/logs/intents.db" ]; then
+  echo "ERROR: intents.db not found. Run synthex-init first." >&2
+  exit 1
+fi
+
+# Escape single quotes for SQLite to prevent injection
+ARGUMENTS_ESC="$(printf '%s' "$ARGUMENTS" | sed "s/'/''/g")"
 sqlite3 "$SYNTHEX_ROOT/logs/intents.db" \
-  "INSERT INTO intents (agent, action, why, context) VALUES ('research-scientist', 'experiment.start', '$ARGUMENTS', '{}');"
+  "INSERT INTO intents (agent, action, why, context) VALUES ('research-scientist', 'experiment.start', '$ARGUMENTS_ESC', '{}');"
 ```
 
 Create a task record:
 
 ```bash
+SYNTHEX_ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
 TASK_ID=$(uuidgen 2>/dev/null || python3 -c "import uuid; print(uuid.uuid4().hex)")
-sqlite3 "$SYNTHEX_ROOT/logs/intents.db" \
-  "INSERT INTO tasks (id, title, priority, status, assigned_to) VALUES ('$TASK_ID', 'Experiment: $ARGUMENTS', 'high', 'in-progress', 'research-scientist');"
+# Escape single quotes for SQLite to prevent injection (ARGUMENTS is user-supplied)
+ARGUMENTS_ESC="$(printf '%s' "$ARGUMENTS" | sed "s/'/''/g")"
+
+# Verify tasks table exists
+TABLE_OK=$(sqlite3 "$SYNTHEX_ROOT/logs/intents.db" "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='tasks';")
+if [ "$TABLE_OK" -gt 0 ]; then
+  sqlite3 "$SYNTHEX_ROOT/logs/intents.db" \
+    "INSERT INTO tasks (id, title, priority, status, assigned_to) VALUES ('$TASK_ID', 'Experiment: $ARGUMENTS_ESC', 'high', 'in-progress', 'research-scientist');"
+else
+  echo "WARNING: tasks table not found in intents.db" >&2
+fi
 ```
 
 ## Step 3 -- Phase 1: Design
@@ -82,10 +105,25 @@ Synthesize everything into a final report. Launch the documentation-engineer (vi
 ## Step 7 -- Mark complete
 
 ```bash
-sqlite3 "$SYNTHEX_ROOT/logs/intents.db" \
-  "UPDATE tasks SET status='completed', completed_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id='$TASK_ID';"
-sqlite3 "$SYNTHEX_ROOT/logs/state_ledger.db" \
-  "INSERT INTO state_ledger (agent, event_type, details) VALUES ('research-scientist', 'experiment.complete', '{\"task_id\":\"$TASK_ID\",\"output\":\"agent-output/reports/experiment-<name>/\"}');"
+SYNTHEX_ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
+
+# Update tasks record in intents.db (with table existence check)
+if [ -f "$SYNTHEX_ROOT/logs/intents.db" ]; then
+  TABLE_OK=$(sqlite3 "$SYNTHEX_ROOT/logs/intents.db" "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='tasks';")
+  if [ "$TABLE_OK" -gt 0 ]; then
+    sqlite3 "$SYNTHEX_ROOT/logs/intents.db" \
+      "UPDATE tasks SET status='completed', completed_at=strftime('%Y-%m-%dT%H:%M:%fZ','now'), updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id='$TASK_ID';"
+  fi
+fi
+
+# Log to state_ledger (with DB/table existence check)
+if [ -f "$SYNTHEX_ROOT/logs/state_ledger.db" ]; then
+  TABLE_OK=$(sqlite3 "$SYNTHEX_ROOT/logs/state_ledger.db" "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='state_ledger';")
+  if [ "$TABLE_OK" -gt 0 ]; then
+    sqlite3 "$SYNTHEX_ROOT/logs/state_ledger.db" \
+      "INSERT INTO state_ledger (agent, event_type, details) VALUES ('research-scientist', 'experiment.complete', '{\"task_id\":\"$TASK_ID\",\"output\":\"agent-output/reports/experiment-<name>/\"}');"
+  fi
+fi
 ```
 
 Report the results and output directory to the user.

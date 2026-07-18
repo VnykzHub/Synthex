@@ -22,9 +22,17 @@ synthex_init_dbs "$ROOT"
 WHY="$TASK_TITLE"
 [ -z "$WHY" ] && WHY="task.$ACTION"
 
-sqlite3 "$ROOT/logs/intents.db" <<SQL
-INSERT INTO intents(agent, action, why, task_id)
-VALUES('task-tracker', 'task.$ACTION', '$WHY', '$TASK_ID');
+CONTEXT="$(printf '%s' "$INPUT" | jq -r '.context // ""' 2>/dev/null || true)"
+
+# Escape single quotes for SQLite to prevent injection
+WHY_ESC="$(printf '%s' "$WHY" | sed "s/'/''/g")"
+TASK_ID_ESC="$(printf '%s' "$TASK_ID" | sed "s/'/''/g")"
+CONTEXT_ESC="$(printf '%s' "$CONTEXT" | sed "s/'/''/g")"
+
+command -v sqlite3 >/dev/null 2>&1 || exit 0
+sqlite3 -cmd ".timeout 5000" "$ROOT/logs/intents.db" <<SQL
+INSERT INTO intents(agent, action, why, task_id, context)
+VALUES('task-tracker', 'task.$ACTION', '$WHY_ESC', '$TASK_ID_ESC', '$CONTEXT_ESC');
 SQL
 
 exit 0

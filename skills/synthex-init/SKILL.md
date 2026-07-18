@@ -11,8 +11,9 @@ Resolve SYNTHEX_ROOT from $CLAUDE_PROJECT_DIR, else $PWD. The sandbox lives in t
 
 ## Step 1 -- Resolve root
 
-```
-SYNTHEX_ROOT=$CLAUDE_PROJECT_DIR  # if set, else $PWD
+```bash
+SYNTHEX_ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
+export SYNTHEX_ROOT
 ```
 
 ## Step 2 -- Create directory tree

@@ -1,4 +1,5 @@
 # Pin once implemented (see BUILD_PLAN T4.1/T4.3).
-# mcp
-# sentence-transformers
-# chromadb
+mcp>=1.0.0
+sentence-transformers>=3.0.0
+chromadb>=0.5.0
+numpy>=1.24.0

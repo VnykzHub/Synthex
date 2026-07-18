@@ -9,31 +9,41 @@ allowed-tools: Bash(sqlite3 *) Bash(echo *) Bash(test *)
 
 ## Step 1 -- Resolve SYNTHEX_ROOT
 
-```
-SYNTHEX_ROOT = $CLAUDE_PROJECT_DIR  (if set)  else $PWD
+```bash
+SYNTHEX_ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
+export SYNTHEX_ROOT
 ```
 
 ## Step 2 -- Verify the DB exists
 
 ```bash
+SYNTHEX_ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
 test -f "$SYNTHEX_ROOT/logs/intents.db" || { echo "ERROR: intents.db not found. Run /synthex:synthex-init first."; exit 1; }
 ```
 
-## Step 3 -- Query tasks
+## Step 3 -- Query tasks (with optional status filter)
 
-Query the tasks table for all tasks. If $ARGUMENTS includes a filter (e.g. a status value), apply it.
+If $ARGUMENTS includes a status value, apply it as a WHERE filter.
 
 ```bash
-# All tasks
+SYNTHEX_ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
+
+# Apply optional status filter from $ARGUMENTS
+FILTER=""
+if [ -n "$ARGUMENTS" ] && [ "$ARGUMENTS" != "" ]; then
+  # Escape single quotes for SQLite
+  STATUS_SAFE="$(printf '%s' "$ARGUMENTS" | sed "s/'/''/g")"
+  FILTER="WHERE status='$STATUS_SAFE'"
+fi
+
+# All tasks (optionally filtered)
 sqlite3 -header -column "$SYNTHEX_ROOT/logs/intents.db" \
-  "SELECT id, title, status, assigned_to, priority, created_at FROM tasks ORDER BY created_at DESC;" 2>/dev/null \
+  "SELECT id, title, status, assigned_to, priority, created_at FROM tasks $FILTER ORDER BY created_at DESC;" \
   || echo "tasks table is empty or does not exist yet."
-```
 
-```bash
 # Task count by status
 sqlite3 "$SYNTHEX_ROOT/logs/intents.db" \
-  "SELECT status, COUNT(*) as count FROM tasks GROUP BY status;" 2>/dev/null
+  "SELECT status, COUNT(*) as count FROM tasks GROUP BY status;"
 ```
 
 ## Step 4 -- Render Markdown table
@@ -60,7 +70,7 @@ Also optionally query the intents table for recent activity:
 
 ```bash
 sqlite3 -header -column "$SYNTHEX_ROOT/logs/intents.db" \
-  "SELECT ts, agent, action, why FROM intents ORDER BY ts DESC LIMIT 10;" 2>/dev/null
+  "SELECT ts, agent, action, why FROM intents ORDER BY ts DESC LIMIT 10;"
 ```
 
 Present the rendered table to the user.

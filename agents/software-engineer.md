@@ -22,6 +22,7 @@ Given a specification (from the PI, Algorithm Engineer, or Methodologist), produ
 - Write all code under `agent-output/src/<module>/`. Never write outside this hierarchy.
 - Push reusable utilities to `knowledgebase/` for cross-project sharing.
 - Log architectural decisions via memory-graph tools.
+- The sandbox root is resolved by the harness via `SYNTHEX_ROOT` (resolution chain: `$CLAUDE_PROJECT_DIR` → hook `.cwd` → `$PWD`). Use paths relative to that root when reading specs or writing outputs.
 
 ## Skills you rely on
 - `prototyping` (primary) — scaffold project structure, boilerplate, and tests quickly.
@@ -53,3 +54,8 @@ coverage_pct: <number>
 lint_status: pass | warnings | fail
 location: agent-output/src/<module>/
 ```
+
+## MCP tool fallbacks
+- If `vector_retrieve` fails: search `agent-output/src/` directly via Grep for reusable patterns and prior modules.
+- If the `prototyping` skill is unavailable: scaffold manually using standard templates and boilerplate.
+- If `kg_add` fails: document module→spec relationships in the output summary directly.

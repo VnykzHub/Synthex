@@ -3,5 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "bin": { "synthex-viz": "server.js" }
+  "bin": { "synthex-viz": "server.js" },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": ">=5.0",
+    "zod": ">=3.0"
+  }
 }

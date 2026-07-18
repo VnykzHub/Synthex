@@ -15,7 +15,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "monitors" / "audit-archivist"))
+_archivist_path = str(Path(__file__).resolve().parent.parent / "monitors" / "audit-archivist")
+sys.path.insert(0, _archivist_path)
 
 import archivist as aa  # noqa: E402
 
@@ -55,6 +56,14 @@ class TestEnsureSchema(TmpCase):
                 "SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
         for t in ("state_ledger", "kg_triples"):
             self.assertIn(t, names)
+
+    def test_column_schema(self):
+        i, s = aa.ensure_schema(self.logs)
+        # Verify intents columns exist (NOT NULL not enforced in current schema)
+        with sqlite3.connect(i) as c:
+            cols = {r[1]: r for r in c.execute("PRAGMA table_info(intents)").fetchall()}
+        for col_name in ("agent", "action", "why"):
+            self.assertIsNotNone(cols.get(col_name), f"missing column {col_name}")
 
 
 class TestQueryTaskCounts(TmpCase):
@@ -106,24 +115,30 @@ class TestTick(TmpCase):
 class TestMain(TmpCase):
 
     def test_once_ok(self):
-        self.assertEqual(aa.main(["--db-path", self.logs, "--once"]), 0)
+        self.assertEqual(aa.main(["--logs-dir", self.logs, "--once"]), 0)
 
     def test_bad_path(self):
         # Use a path guaranteed to fail: parent is a file, not a directory.
         f = os.path.join(self.tmp, "notadir", "sub")
         with open(os.path.join(self.tmp, "notadir"), "w") as fh:
             fh.write("block")
-        self.assertNotEqual(aa.main(["--db-path", f, "--once"]), 0)
+        self.assertNotEqual(aa.main(["--logs-dir", f, "--once"]), 0)
 
 
 class TestUtils(unittest.TestCase):
 
     def test_utc_now_iso(self):
-        self.assertIn("T", aa.utc_now_iso())
-        self.assertIn("Z", aa.utc_now_iso())
+        ts = aa.utc_now_iso()
+        self.assertIn("T", ts)
+        self.assertIn("Z", ts)
+        # Verify millisecond precision: three digits before Z
+        ms_part = ts.split(".")[1]
+        self.assertEqual(len(ms_part), 4)  # 3 digits + Z
 
     def test_resolve_root(self):
-        self.assertIsInstance(aa.resolve_synthex_root(), str)
+        root = aa.resolve_synthex_root()
+        self.assertIsInstance(root, str)
+        self.assertTrue(os.path.isdir(root))
 
     def test_interval_default(self):
         self.assertEqual(aa.resolve_interval(None), 300)
@@ -139,6 +154,14 @@ class TestUtils(unittest.TestCase):
     def test_interval_env_invalid(self):
         os.environ["SYNTHEX_ARCHIVIST_INTERVAL"] = "nope"
         self.assertEqual(aa.resolve_interval(None), 300)
+
+
+def tearDownModule():
+    """Clean up sys.path after tests."""
+    try:
+        sys.path.remove(_archivist_path)
+    except ValueError:
+        pass
 
 
 if __name__ == "__main__":

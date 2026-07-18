@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # sandbox-gate.sh — PreToolUse guard enforcing the Synthex sandbox.
-#   Write/Edit -> only inside  $SYNTHEX_ROOT/agent-output/
+#   Write/Edit -> only inside  $SYNTHEX_ROOT/{agent-output,knowledgebase}/
 #   Read       -> only inside  {user-input, knowledgebase, agent-output}/
 # Blocks by exiting 2 with a reason on stderr; exit 0 = no objection.
 # Fails OPEN (exit 0) on parse errors, empty path, or permissive mode.
@@ -42,14 +42,24 @@ OUT="$SYNTHEX_ROOT/agent-output"
 IN="$SYNTHEX_ROOT/user-input"
 KB="$SYNTHEX_ROOT/knowledgebase"
 
+# --- Canonicalize paths to prevent traversal via ../../ or symlinks ---
+# Uses os.path.realpath which resolves symlinks and normalises '..'.
+# For non-existent paths, realpath resolves the longest existing prefix.
+# Falls back to original string if python3 is unavailable.
+CANON() { python3 -c "import os,sys; print(os.path.realpath(sys.argv[1]))" "$1" 2>/dev/null || echo "$1"; }
+FP_CANON="$(CANON "$FP")"
+OUT="$(CANON "$OUT")"
+IN="$(CANON "$IN")"
+KB="$(CANON "$KB")"
+
 case "$TOOL" in
   Write|Edit)
-    case "$FP" in
-      "$OUT"/*|"$OUT") exit 0 ;;
-      *) echo "sandbox-gate: writes are only permitted under agent-output/ (got: $FP)" >&2; exit 2 ;;
+    case "$FP_CANON" in
+      "$OUT"/*|"$OUT"|"$KB"/*|"$KB") exit 0 ;;
+      *) echo "sandbox-gate: writes are only permitted under agent-output/ or knowledgebase/ (got: $FP)" >&2; exit 2 ;;
     esac ;;
   Read)
-    case "$FP" in
+    case "$FP_CANON" in
       "$IN"/*|"$IN"|"$KB"/*|"$KB"|"$OUT"/*|"$OUT") exit 0 ;;
       *) echo "sandbox-gate: reads are only permitted from user-input/, knowledgebase/, agent-output/ (got: $FP)" >&2; exit 2 ;;
     esac ;;

@@ -1,25 +1,23 @@
 {
   "mcpServers": {
     "memory-graph": {
-      "command": "python3",
+      "command": "python",
       "args": [
-        "${CLAUDE_PLUGIN_ROOT}/mcp-servers/memory-graph/server.py",
-        "--db-path", "${CLAUDE_PLUGIN_ROOT}/../logs"
+        "${CLAUDE_PLUGIN_ROOT}/mcp-servers/memory-graph/server.py"
       ],
-      "env": { "SYNTHEX_VECTOR_BACKEND": "chroma" }
+      "env": { "SYNTHEX_VECTOR_BACKEND": "chroma" },
+      "timeout": 30000
     },
     "visualization": {
       "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp-servers/visualization/server.js"]
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp-servers/visualization/server.js"],
+      "timeout": 30000
     },
     "heavy-compute": {
-      "command": "docker",
-      "args": [
-        "run", "--rm", "-i",
-        "-v", "${CLAUDE_PLUGIN_ROOT}/../agent-output:/workspace/output",
-        "-v", "${CLAUDE_PLUGIN_ROOT}/../user-input:/workspace/input:ro",
-        "synthex/compute-engine:latest", "mcp-server"
-      ]
+      "command": "python",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp-servers/heavy-compute/server.py"],
+      "env": { "CLAUDE_PROJECT_DIR": "${CLAUDE_PROJECT_DIR:-.}" },
+      "timeout": 120000
     }
   }
 }

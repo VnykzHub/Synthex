@@ -2,7 +2,10 @@
 # test_hooks.sh — comprehensive test harness for Synthex hook scripts.
 set -uo pipefail
 
+command -v jq >/dev/null 2>&1 || { echo "jq required"; exit 1; }
+
 TEST_ROOT="$(mktemp -d)"
+[ -z "$TEST_ROOT" ] && { echo "mktemp -d failed"; exit 1; }
 export CLAUDE_PROJECT_DIR="$TEST_ROOT"
 mkdir -p "$TEST_ROOT/agent-output" "$TEST_ROOT/user-input" "$TEST_ROOT/knowledgebase"
 
@@ -29,22 +32,32 @@ echo '{"tool_name":"Read","tool_input":{"file_path":"'$TEST_ROOT'/random.txt"}}'
 echo '{"tool_name":"Read","tool_input":{"file_path":"'$TEST_ROOT'/user-input/data.csv"}}' | bash sandbox-gate.sh; check "read-inside" 0 $?
 
 # Test 5: Permissive mode -> always allowed
-SYNTHEX_SANDBOX_MODE=permissive bash sandbox-gate.sh <<< '{"tool_name":"Write","tool_input":{"file_path":"'$TEST_ROOT'/evil.sh"}}'; check "permissive" 0 $?
+echo '{"tool_name":"Write","tool_input":{"file_path":"'$TEST_ROOT'/evil.sh"}}' | SYNTHEX_SANDBOX_MODE=permissive bash sandbox-gate.sh; check "permissive" 0 $?
 
 # Test 6: Empty path -> no-op (exit 0)
 echo '{"tool_name":"Write","tool_input":{}}' | bash sandbox-gate.sh; check "empty-path" 0 $?
 
 # Test 7: agent-lifecycle-logger writes DB row
 echo '{"agent_type":"test-agent","session_id":"abc123"}' | bash agent-lifecycle-logger.sh start
-sqlite3 "$TEST_ROOT/logs/state_ledger.db" "SELECT COUNT(*) FROM state_ledger WHERE event_type='subagent.start'" > /dev/null; check "lifecycle-log" 0 $?
+COUNT=$(sqlite3 "$TEST_ROOT/logs/state_ledger.db" "SELECT COUNT(*) FROM state_ledger WHERE event_type='subagent.start'")
+[ "$COUNT" -gt 0 ]; check "lifecycle-log" 0 $?
 
 # Test 8: task-tracker writes intents row
 echo '{"task_id":"t1","task_title":"demo"}' | bash task-tracker.sh create
-sqlite3 "$TEST_ROOT/logs/intents.db" "SELECT COUNT(*) FROM intents WHERE action='task.create'" > /dev/null; check "task-track" 0 $?
+COUNT=$(sqlite3 "$TEST_ROOT/logs/intents.db" "SELECT COUNT(*) FROM intents WHERE action='task.create'")
+[ "$COUNT" -gt 0 ]; check "task-track" 0 $?
 
 # Test 9: auto-indexer creates queue entry
 echo '{"tool_name":"Write","tool_input":{"file_path":"'$TEST_ROOT'/agent-output/readme.md"}}' | bash auto-indexer.sh
 [ -f "$TEST_ROOT/logs/index_queue.jsonl" ]; check "auto-index" 0 $?
+
+# Test 10: cwd-based root resolution (no CLAUDE_PROJECT_DIR)
+CLAUDE_PROJECT_DIR_SAVED="${CLAUDE_PROJECT_DIR:-}"
+unset CLAUDE_PROJECT_DIR
+echo '{"agent_type":"cwd-test","cwd":"'"$TEST_ROOT"'"}' | bash agent-lifecycle-logger.sh start
+COUNT=$(sqlite3 "$TEST_ROOT/logs/state_ledger.db" "SELECT COUNT(*) FROM state_ledger WHERE agent='cwd-test'")
+[ "$COUNT" -gt 0 ]; check "cwd-resolution" 0 $?
+CLAUDE_PROJECT_DIR="$CLAUDE_PROJECT_DIR_SAVED"
 
 echo "---"
 echo "$PASS passed, $FAIL failed"

@@ -2,95 +2,93 @@
 name: audit
 description: "/synthex:audit -- Compile logs/state_ledger.db and logs/intents.db into a chronological Markdown audit report with event timeline, task summary, and recent KG triples."
 disable-model-invocation: true
-allowed-tools: Bash(sqlite3 *) Bash(echo *) Bash(test *) Bash(mkdir *) Bash(date *)
+allowed-tools: Bash(sqlite3 *) Bash(echo *) Bash(test *) Bash(mkdir *) Bash(date *) Bash(cat *) Bash(awk *) Bash(printf *) Bash(sed *)
 ---
 
 # /synthex:audit -- Compile chronological audit report
 
 ## Step 1 -- Resolve SYNTHEX_ROOT
 
-```
-SYNTHEX_ROOT = $CLAUDE_PROJECT_DIR  (if set)  else $PWD
+```bash
+SYNTHEX_ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
 ```
 
 ## Step 2 -- Verify databases
 
 ```bash
+SYNTHEX_ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
 test -f "$SYNTHEX_ROOT/logs/intents.db" || echo "WARNING: intents.db not found"
 test -f "$SYNTHEX_ROOT/logs/state_ledger.db" || echo "WARNING: state_ledger.db not found"
 ```
 
-## Step 3 -- Extract data from both databases
+## Step 3 -- Extract data and assemble the audit report (Steps 3-6 merged)
 
 ```bash
-# State ledger -- full event timeline
-sqlite3 -header -column "$SYNTHEX_ROOT/logs/state_ledger.db" \
-  "SELECT id, ts, agent, event_type, details FROM state_ledger ORDER BY ts ASC;" 2>/dev/null
-```
+SYNTHEX_ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
 
-```bash
-# Intents -- full intent timeline
-sqlite3 -header -column "$SYNTHEX_ROOT/logs/intents.db" \
-  "SELECT id, ts, agent, action, why, task_id FROM intents ORDER BY ts ASC;" 2>/dev/null
-```
-
-```bash
-# Tasks -- summary (status rollup)
-sqlite3 -header -column "$SYNTHEX_ROOT/logs/intents.db" \
-  "SELECT id, title, status, assigned_to, created_at, completed_at FROM tasks ORDER BY created_at ASC;" 2>/dev/null
-```
-
-```bash
-# KG triples -- recent
-sqlite3 -header -column "$SYNTHEX_ROOT/logs/state_ledger.db" \
-  "SELECT id, subject, predicate, object, source, ts FROM kg_triples ORDER BY ts DESC LIMIT 20;" 2>/dev/null
-```
-
-## Step 4 -- Determine output filename
-
-```bash
+# Compute output filename
 DATE_STAMP=$(date -u +%Y-%m-%d)
 OUTPUT_FILE="$SYNTHEX_ROOT/agent-output/reports/audit_${DATE_STAMP}.md"
-```
 
-## Step 5 -- Assemble the audit report
+# Ensure output directory exists
+mkdir -p "$SYNTHEX_ROOT/agent-output/reports"
 
-Write to `$OUTPUT_FILE` with the following structure:
+# Query state_ledger.db (one invocation, .output redirects to separate temp files)
+sqlite3 "$SYNTHEX_ROOT/logs/state_ledger.db" 2>/dev/null <<SQL
+.separator |
+.headers off
+.output /tmp/synthex_events.txt
+SELECT id, ts, agent, event_type, details FROM state_ledger ORDER BY ts ASC LIMIT 500;
+.output /tmp/synthex_kg.txt
+SELECT subject, predicate, object, source, ts FROM kg_triples ORDER BY ts DESC LIMIT 20;
+SQL
 
-```markdown
-# Synthex Audit Report -- $(date -u +%Y-%m-%d)
+# Query intents.db (one invocation, .output redirects to separate temp files)
+sqlite3 "$SYNTHEX_ROOT/logs/intents.db" 2>/dev/null <<SQL
+.separator |
+.headers off
+.output /tmp/synthex_intents.txt
+SELECT id, ts, agent, action, why, task_id FROM intents ORDER BY ts ASC LIMIT 500;
+.output /tmp/synthex_tasks.txt
+SELECT id, title, status, assigned_to, created_at, completed_at FROM tasks ORDER BY created_at ASC LIMIT 500;
+SQL
+
+# Assemble the Markdown report via heredoc
+cat > "$OUTPUT_FILE" << REPORTOUT
+# Synthex Audit Report -- ${DATE_STAMP}
 Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)
 
 ## 1. Event Timeline (state_ledger)
 | # | Timestamp | Agent | Event Type | Details |
 | :-| :-------- | :---- | :--------- | :------ |
-| ... merged from Step 3 state_ledger query ...
+$(awk '{print "| " $0 " |"}' /tmp/synthex_events.txt)
 
 ## 2. Intent Log (intents)
 | # | Timestamp | Agent | Action | Why | Task ID |
 | :-| :-------- | :---- | :----- | :-- | :------ |
-| ... merged from Step 3 intents query ...
+$(awk '{print "| " $0 " |"}' /tmp/synthex_intents.txt)
 
 ## 3. Task Summary
 | ID | Title | Status | Assigned To | Created | Completed |
 | :- | :---- | :----- | :---------- | :------ | :-------- |
-| ... merged from Step 3 tasks query ...
+$(awk '{print "| " $0 " |"}' /tmp/synthex_tasks.txt)
 
 ## 4. Recent Knowledge Graph Triples
 | Subject | Predicate | Object | Source | Timestamp |
 | :------ | :-------- | :----- | :----- | :-------- |
-| ... merged from Step 3 kg_triples query ...
+$(awk '{print "| " $0 " |"}' /tmp/synthex_kg.txt)
 
 ## 5. Report Metadata
 - Source DBs: logs/intents.db, logs/state_ledger.db
 - Report path: $OUTPUT_FILE
-```
+REPORTOUT
 
-## Step 6 -- Log the audit event
-
-```bash
+# Log the audit event in state_ledger
+OUTPUT_FILE_ESC="$(printf '%s' "$OUTPUT_FILE" | sed "s/'/''/g")"
 sqlite3 "$SYNTHEX_ROOT/logs/state_ledger.db" \
-  "INSERT INTO state_ledger (agent, event_type, details) VALUES ('audit-archivist', 'audit.generate', '{\"path\":\"$OUTPUT_FILE\"}');"
+  "INSERT INTO state_ledger (agent, event_type, details) VALUES ('audit-archivist', 'audit.generate', '{\"path\":\"$OUTPUT_FILE_ESC\"}');"
+
+echo "Audit report written to: $OUTPUT_FILE"
 ```
 
 Report the output path to the user.

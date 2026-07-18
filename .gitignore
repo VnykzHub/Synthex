@@ -1,13 +1,26 @@
-# Runtime sandbox (created by /synthex:synthex-init in the *user's* project, not part of the plugin)
-/user-input/
-/agent-output/
-/knowledgebase/
-/logs/
+# Runtime sandbox — sandbox lives in the user's project, not the plugin
+user-input/
+agent-output/
+knowledgebase/
+logs/
 
-# Python / Node build detritus
+# Python build detritus
 __pycache__/
 *.pyc
 .venv/
+*.egg-info/
+
+# Node build detritus
 node_modules/
 dist/
+
+# Environment / secrets
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
 *.log
