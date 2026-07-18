@@ -1,0 +1,4 @@
+# Pin once implemented (see BUILD_PLAN T4.1/T4.3).
+# mcp
+# sentence-transformers
+# chromadb

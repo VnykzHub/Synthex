@@ -1,0 +1,13 @@
+# Runtime sandbox (created by /synthex:synthex-init in the *user's* project, not part of the plugin)
+/user-input/
+/agent-output/
+/knowledgebase/
+/logs/
+
+# Python / Node build detritus
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+dist/
+*.log

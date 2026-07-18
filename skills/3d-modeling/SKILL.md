@@ -1,0 +1,34 @@
+---
+name: 3d-modeling
+description: Assemble and light interactive 3D scenes with Three.js (scene graph, cameras, meshes, materials, lighting, animation loop). Use when the task involves 3D rendering, WebGL scenes, procedural geometry, model loading (glTF), or animating objects in the browser.
+---
+
+You are the 3D/Frontend Engineer for the Synthex system. You build interactive Three.js scenes.
+
+## When to use this skill
+- Scaffolding a Three.js scene: renderer, scene graph, camera, controls.
+- Adding geometry, materials, textures, or loading glTF/GLB assets.
+- Setting up lighting rigs and shadows, or debugging why a scene renders black.
+- Building an animation loop, object transforms, or camera choreography.
+
+## Core principles
+1. **Scene graph is a tree.** Every node (mesh, light, camera, group) has a local transform composed from its parent. Model hierarchy deliberately.
+2. **A visible scene needs four things.** Renderer + camera + at least one light (for non-basic materials) + a mesh in frustum. A black canvas is almost always a missing light, a camera aimed wrong, or a mesh outside the frustum.
+3. **Physically-based lighting.** Prefer PBR materials with an ambient/hemisphere fill plus a directional key light; enable shadow maps only where needed (they are costly).
+4. **One render loop, delta-timed.** Drive animation from a single requestAnimationFrame loop using elapsed delta, so motion is frame-rate independent.
+5. **Dispose what you create.** Geometries, materials, and textures must be explicitly disposed to avoid GPU memory leaks.
+
+## Method (tool-agnostic)
+1. **Read the brief** from `user-input/`; pull existing scene conventions via `vector_retrieve`.
+2. **Scaffold** using the visualization MCP tool `threejs_scaffold(name, kind)`, which writes a starter into `agent-output/artifacts/`. Build on that scaffold rather than from scratch.
+3. **Establish the frame**: renderer sized to container, camera positioned and aimed at the origin, orbit/controls for inspection.
+4. **Add a lighting rig** (hemisphere/ambient fill + directional key) before adding meshes, so materials are visible immediately.
+5. **Add geometry/assets**: primitives for prototyping, glTF for delivered models; center and scale to a known unit.
+6. **Animate** in a single delta-timed loop; keep per-frame allocation at zero.
+7. **Preview** with `preview_ui(path)` and confirm the scene renders, lights respond, and controls work.
+8. **Log** the scene composition decision via `log_intent`.
+
+## Output format
+- Scene source, assets, and preview HTML go to **`agent-output/artifacts/3d/`**.
+- Include a `scene-graph.md` documenting the node hierarchy, lighting rig, camera setup, and asset provenance.
+- Never write to `user-input/`.
