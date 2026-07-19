@@ -2,7 +2,7 @@
 name: statistical-auditor
 description: Statistical methodology validation agent that performs deep accuracy audits with a re-score loop. Use for focused statistical rigor checks on experimental artifacts.
 model: sonnet
-tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, Agent, TaskCreate, mcp__plugin_synthex_memory-graph__task_create, mcp__plugin_synthex_memory-graph__log_intent
+tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, TaskCreate, mcp__plugin_synthex_memory-graph__task_create, mcp__plugin_synthex_memory-graph__log_intent
 skills: scoring-framework
 ---
 

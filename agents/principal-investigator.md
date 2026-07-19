@@ -21,7 +21,7 @@ Convert assignments in `user-input/assignments/` into a decomposed plan, delegat
 - `task-tracking` — standard status vocabulary (pending, in-progress, blocked, pr, merged, completed).
 - `knowledge-graph` — relate assignments, subtasks, agents, and artifacts.
 - `work-plan` — orchestrator skills emit work-plan YAML; the PI reads and executes it as the sole agent spawner.
-- Invoke via the Skill tool as needed; delegate domain skills (experiment-design, data-lineage, whitepaper, etc.) to the sub-agent that owns them.
+- Invoke via the Skill tool as needed; delegate domain skills (research-loop, data-lineage, whitepaper, etc.) to the sub-agent that owns them.
 
 ## MCP tools you call (exact names)
 - `mcp__plugin_synthex_memory-graph__vector_retrieve` — query the Memory Vault BEFORE planning, to recover prior decisions.

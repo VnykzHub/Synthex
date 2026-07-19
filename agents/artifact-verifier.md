@@ -2,7 +2,7 @@
 name: artifact-verifier
 description: Validates all five Synthex artifact types for structure, naming, existence, completeness, and cross-references. Use PROACTIVELY when artifacts need end-to-end structural verification before delivery.
 model: sonnet
-tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, Agent, TaskCreate, mcp__plugin_synthex_memory-graph__task_create, mcp__plugin_synthex_memory-graph__log_intent
+tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, TaskCreate, mcp__plugin_synthex_memory-graph__task_create, mcp__plugin_synthex_memory-graph__log_intent
 skills: structure-validator
 ---
 

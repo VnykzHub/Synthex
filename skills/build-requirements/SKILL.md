@@ -24,7 +24,7 @@ You are the **Build Requirements** command skill for Synthex. When invoked (via 
 - `disable-model-invocation: true` — this skill runs as a script, not an agent prompt. It is triggered by the slash command and may prompt the user for input.
 
 ## What this skill produces
-A file at `E:/PROJECTS 2026/Synthex/synthex-plugin/requirements.md` containing:
+A file at `$SYNTHEX_ROOT/agent-output/artifacts/requirements.md` containing:
 
 1. **Project metadata** — name, version, creation date, owner.
 2. **Environment prerequisites** — language runtime, package manager, system dependencies, minimum versions.

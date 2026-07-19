@@ -46,7 +46,7 @@ VALID_SKILL = {"name", "description", "disable-model-invocation", "allowed-tools
 CMD_SKILLS = {"synthex-init", "delegate", "theory", "pipeline", "report",
               "experiment", "status", "audit", "memory"}
 DOMAIN_SKILLS = {"task-tracking", "knowledge-graph", "data-lineage",
-                 "experiment-design", "frontend-dev", "3d-modeling",
+                 "frontend-dev", "3d-modeling",
                  "presentation", "whitepaper", "prototyping"}
 
 

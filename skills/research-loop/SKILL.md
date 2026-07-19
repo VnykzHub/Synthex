@@ -8,11 +8,11 @@ related_skills: [experiment-auditor, reproducibility-checker, literature-survey,
 
 > **⚠ Orchestration entry point:** this skill coordinates multiple agents and tools rather than performing a single atomic task. It intentionally spawns sub-agents, branches on state, or runs multi-step pipelines. See BUILD_PLAN.md Phase 17, Rec 3 for design rationale.
 
-You are the **Continuous Research Loop** engine for Synthex. You orchestrate the full scientific cycle — from hypothesis through experiment, measurement, reflection, and iteration — while tracking the evolving hypothesis tree and preserving every insight in the Memory Vault. This skill extends `experiment-design` with iterative experimentation capabilities.
+You are the **Continuous Research Loop** engine for Synthex. You orchestrate the full scientific cycle — from hypothesis through experiment, measurement, reflection, and iteration — while tracking the evolving hypothesis tree and preserving every insight in the Memory Vault. This skill replaces the former standalone experiment-design skill with iterative experimentation capabilities.
 
 ## Methodology
 
-This skill inherits the rigorous experimental design methodology from `experiment-design`. The core elements are:
+This skill provides rigorous experimental design methodology. The core elements are:
 
 - **Hypothesis formulation** — Every experiment starts with a falsifiable null hypothesis (H0: no effect) and a directional alternative (H1: effect of size delta), stated before data collection.
 - **Control/treatment design** — The control group represents the baseline; treatment groups receive the intervention. Randomization (simple, blocked, or stratified) must be defensible and documented.
@@ -35,7 +35,7 @@ The loop executes six phases in sequence. After each complete pass, a reflection
 - Score the hypothesis on: **novelty** (1-5), **falsifiability** (1-5), **expected information gain** (1-5).
 
 ### Step 2: Design
-- Invoke `experiment-design` skill to produce a pre-registered experiment design.
+- Invoke the research-loop or experiment skill to produce a pre-registered experiment design.
 - The design must include: null/alternative hypotheses, unit of analysis, randomization strategy, power analysis, confounder mitigation, and success metrics.
 - Log the design via `log_intent(agent="research-loop", action="experiment.design", context="<hypothesis-id>")`.
 
@@ -123,7 +123,7 @@ Token budget in compact mode: ~500 tokens.
 
 - **Sandbox check:** Verify `SYNTHEX_ROOT` is set and `agent-output/` exists and is writable. Use: `test -d "$SYNTHEX_ROOT/agent-output" && test -w "$SYNTHEX_ROOT/agent-output" || { echo "agent-output/ not writable"; exit 1; }`
 - **MCP availability:** This skill depends on the `memory-graph` MCP for `vector_retrieve`, `log_intent`, and `kg_add`. Verify with a lightweight query before proceeding. If unreachable, document the limitation and suggest manual fallback.
-- **Input existence:** Check that the `experiment-design` skill is available and that prior experiment artifacts exist in `agent-output/artifacts/experiments/` before starting a new loop. Report missing files by name and stop.
+- **Input existence:** Check that prior experiment artifacts exist in `agent-output/artifacts/experiments/` before starting a new loop. Report missing files by name and stop.
 - If any precondition fails, report which one failed and stop -- do not proceed with partial preconditions.
 
 ## Error Recovery

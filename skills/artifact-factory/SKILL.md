@@ -3,7 +3,7 @@ name: artifact-factory
 description: Generator patterns for YAML, Markdown, code, and tests from templates. Use when generating structured artifacts.
 aliases: [generate, scaffold, create-artifact, factory]
 role: worker
-related_skills: [structure-validator, pre-submission-checklist, add-component]
+related_skills: [structure-validator, enable-validation, scoring-framework]
 ---
 
 # artifact-factory

@@ -2,7 +2,7 @@
 name: peer-validator
 description: Multi-dimensional peer review agent that scores artifacts across correctness, quality, performance, security, and test coverage. Use PROACTIVELY when an artifact needs structured review before acceptance.
 model: sonnet
-tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, Agent, TaskCreate, mcp__plugin_synthex_memory-graph__task_create, mcp__plugin_synthex_memory-graph__log_intent
+tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, TaskCreate, mcp__plugin_synthex_memory-graph__task_create, mcp__plugin_synthex_memory-graph__log_intent
 skills: scoring-framework
 ---
 

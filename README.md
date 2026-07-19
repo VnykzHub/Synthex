@@ -1,6 +1,6 @@
 # Synthex v2.0.0
 
-Enterprise-grade multi-agent operating framework for Claude Code — pipeline orchestration, continuous research loop, 24 specialist agents, 43 skills, 22 commands, three MCP servers, a 4-tier vector Memory Vault, zero-write sandbox, and always-on audit daemon. No analytical trail is ever lost.
+Enterprise-grade multi-agent operating framework for Claude Code — pipeline orchestration, continuous research loop, 23 specialist agents, 41 skills, 22 commands, three MCP servers, a 4-tier vector Memory Vault, zero-write sandbox, and always-on audit daemon. No analytical trail is ever lost.
 
 ---
 
@@ -12,11 +12,11 @@ Claude Code is powerful but stateless: past decisions, mid-session reasoning, an
 |---|---|
 | Agents forget past decisions within 3 turns | Memory Vault (turbovec→chroma→numpy→pure-cosine) auto-injects relevant context before every task |
 | No enforcement of where agents read/write | Zero-write sandbox — agents can't touch your source unless you place it in `user-input/` |
-| Manual coordination of multi-agent work | Pipeline Director orchestrates 5-phase execution (Research→Planning→Implementation→Review→Validation) with 24 specialist agents |
+| Manual coordination of multi-agent work | Pipeline Director orchestrates 5-phase execution (Research→Planning→Implementation→Review→Validation) with 23 specialist agents |
 | No audit trail for decisions | Every tool call, subagent lifecycle, and task decision is logged to SQLite |
 | No persistent semantic search | `vector_retrieve` finds relevant past work by meaning, not filename |
 | One-off experiments with no iteration | Continuous research loop: literature→hypothesis→experiment→reflect→iterate, with autonomous mode |
-| One-size-fits-all agent | 24 domain-specific agents across 7 divisions with 43 pre-loaded skills |
+| One-size-fits-all agent | 24 domain-specific agents across 7 divisions with 41 pre-loaded skills |
 
 **Use Synthex when you have:** multi-phase projects, complex research questions, ETL/ML pipelines, mathematical proofs, experiments requiring iteration, or any work needing traceability and structured output. **Skip it** for quick one-shot questions or single-file edits — Synthex's scaffolding overhead isn't worth it there.
 
@@ -127,7 +127,7 @@ For multi-phase work, use the pipeline:
 
 ## The agent hierarchy
 
-Synthex organizes 24 specialist subagents across 7 divisions under the Principal Investigator.
+Synthex organizes 23 specialist subagents across 7 divisions under the Principal Investigator.
 
 ```
                          ┌─────────────────────────┐
@@ -155,7 +155,7 @@ Synthex organizes 24 specialist subagents across 7 divisions under the Principal
 │ Architecture │  │ Review Div.  │  │ Risk Div.    │
 ├──────────────┤  ├──────────────┤  ├──────────────┤
 │ Architecture │  │ Peer Validator│  │ Risk          │
-│ Advisor      │  │ Accuracy      │  │ Identifier    │
+│ Advisor      │  │ Statistical   │  │ Identifier    │
 │ Quality      │  │   Auditor     │  │               │
 │ Gatekeeper   │  │ Artifact      │  │               │
 │ Standards    │  │   Verifier    │  │               │
@@ -187,7 +187,7 @@ Synthex organizes 24 specialist subagents across 7 divisions under the Principal
 | **Quality Automation** | Engineering | Sonnet | Post-pipeline validation and regression scripts need generation |
 | **Environment Builder** | Engineering | Sonnet | A new Synthex project needs bootstrapping and MCP setup |
 | **Peer Validator** | Review | Sonnet | Code needs asynchronous review across correctness/quality/perf/security/coverage |
-| **Accuracy Auditor** | Review | Sonnet | Output needs quantitative validation with re-score loops (max 3 iterations) |
+| **Statistical Auditor** | Review | Sonnet | Output needs statistical methodology validation with re-score loops (max 3 iterations) |
 | **Artifact Verifier** | Review | Sonnet | All artifact types need structure/naming/existence/completeness validation |
 | **Risk Identifier** | Risk | Sonnet | Plans need challenge against edge cases and failure modes |
 | **Documentation Engineer** | Audit | Haiku | Findings need compilation into whitepapers, PPTX, or HTML dashboards |
@@ -195,7 +195,7 @@ Synthex organizes 24 specialist subagents across 7 divisions under the Principal
 
 ---
 
-## Command reference (22 commands)
+## Command reference (20 commands)
 
 ### Original commands (v1.0)
 
@@ -240,7 +240,7 @@ Synthex organizes 24 specialist subagents across 7 divisions under the Principal
 
 ---
 
-## Domain skills (43 total)
+## Domain skills (41 total)
 
 ### Model-invoked skills (automatically selected by Claude)
 
@@ -249,7 +249,7 @@ Synthex organizes 24 specialist subagents across 7 divisions under the Principal
 | `task-tracking` | Tasks are created, updated, blocked, or completed | v1.0 |
 | `knowledge-graph` | Codebase structure, dependencies, or relationships need mapping | v1.0 |
 | `data-lineage` | ETL pipelines, schema changes, or data flow need documenting | v1.0 |
-| `experiment-design` | A hypothesis needs formal design (superseded by `research-loop`) | v1.0 |
+| `research-loop` | Continuous research: hypothesis, experiment, reflect, iterate (replaces experiment-design) | v2.0 |
 | `frontend-dev` | React/Vue components or client-side UI work | v1.0 |
 | `3d-modeling` | Three.js scenes, WebGL rendering | v1.0 |
 | `presentation` | Slide decks or pitches from results | v1.0 |
@@ -260,7 +260,6 @@ Synthex organizes 24 specialist subagents across 7 divisions under the Principal
 | `data-interpreter` | Source materials need parsing (Excel, XML, JSON, SQL, CSV, YAML) | v2.0 |
 | `artifact-factory` | Structured artifacts (YAML, Markdown, code, tests) need generation | v2.0 |
 | `scoring-framework` | Output quality needs weighted scoring with failure classification | v2.0 |
-| `pre-submission-checklist` | Any artifact submission needs 4-step gate (reqs→format→quality→completeness) | v2.0 |
 | `structure-validator` | Folder boundaries, YAML structures, naming, or file existence need validation | v2.0 |
 | `registry-manager` | Component state tracking across pipeline runs is needed | v2.0 |
 | `task-orchestrator` | Coordination patterns (sequential/parallel/fan-out/fan-in/pipeline) are needed | v2.0 |
@@ -329,7 +328,7 @@ User prompt
     │  Investigator /     │  ← /synthex:launch-pipeline
     │  Pipeline Director  │
     └──────────┬──────────┘
-               │ spawns 24 agents across 7 divisions
+               │ spawns 23 agents across 7 divisions
     ┌──────────┼──────────┐
     ▼          ▼          ▼
  Research  Engineering  Audit/Review/Risk  ← 5-phase gated pipeline
@@ -366,8 +365,8 @@ synthex-plugin/
 ├── hooks/
 │   ├── hooks.json               # PreToolUse·PostToolUse·UserPromptSubmit·Subagent*·Task*
 │   └── scripts/                 # 6 scripts + test harness (10/10 tests)
-├── agents/                      # 24 subagent .md definitions
-├── skills/                      # 43 SKILL.md directories (22 domain + 21 command)
+├── agents/                      # 23 subagent .md definitions
+├── skills/                      # 41 SKILL.md directories (21 domain + 20 command)
 ├── mcp-servers/
 │   ├── memory-graph/            # FastMCP server + synthex_memory.py CLI library
 │   ├── heavy-compute/           # FastMCP server + Dockerfile

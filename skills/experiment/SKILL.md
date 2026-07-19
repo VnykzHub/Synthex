@@ -59,13 +59,13 @@ fi
 
 ## Step 3 -- Phase 1: Design
 
-Load the `experiment-design` domain skill from skills/experiment-design/SKILL.md. It provides methodology for:
+Load the `research-loop` domain skill from skills/research-loop/SKILL.md. It provides methodology for:
 - Hypothesis formulation
 - Variable identification (independent, dependent, controlled)
 - Statistical power analysis
 - Expected outcomes and success criteria
 
-For experiment methodology, delegates to the research-loop skill (supersedes experiment-design).
+For experiment methodology, delegates to the research-loop skill (supersedes the former standalone experiment-design skill). For power analysis templates, see research-loop/references/power-analysis-template.yaml.
 
 Survey `user-input/` for relevant data or reference material:
 
@@ -121,14 +121,14 @@ Instead of directly running experiment phases, this skill **emits a structured w
 ```yaml
 work_plan:
   tasks:
-    - id: "experiment-design"
+    - id: "design-experiment"
       skill: "research-loop"
       input: "$ARGUMENTS"
       depends_on: []
     - id: "experiment-run"
       skill: "pipeline"
       input: "agent-output/reports/experiment-<name>/design.md"
-      depends_on: ["experiment-design"]
+      depends_on: ["design-experiment"]
     - id: "experiment-compare"
       skill: "data-interpreter"
       input: "agent-output/reports/experiment-<name>/results.md"
@@ -138,7 +138,7 @@ work_plan:
       input: "agent-output/reports/experiment-<name>/"
       depends_on: ["experiment-compare"]
   parallel_groups:
-    - ["experiment-design"]
+    - ["design-experiment"]
     - ["experiment-run"]
     - ["experiment-compare"]
     - ["experiment-report"]

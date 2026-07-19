@@ -1,6 +1,6 @@
 # Power Analysis Template
 # Neyman-Pearson Hypothesis Testing Framework
-# Migrated from the former experiment-design skill (removed 2026-07-19)
+# Formerly part of experiment-design skill (removed 2026-07-19); now lives under research-loop
 #
 # This template documents the standard output format for controlled experiment
 # pre-registration. It includes:
