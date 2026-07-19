@@ -1,33 +1,13 @@
 {
   "name": "synthex",
   "version": "2.0.0",
-  "description": "Enterprise-grade multi-agent framework with pipeline orchestration and continuous research loop. 24 specialist agents across 7 divisions, 41 skills, 3 MCP servers, vector Memory Vault, zero-write sandbox, and always-on audit daemon.",
-  "homepage": "https://github.com/synthex/synthex-plugin",
-  "repository": { "type": "git", "url": "https://github.com/synthex/synthex-plugin.git" },
+  "description": "Enterprise-grade multi-agent framework with pipeline orchestration and continuous research loop. 24 specialist agents, 41 skills, 3 MCP servers, 4-tier vector Memory Vault, zero-write sandbox, always-on audit daemon.",
   "author": { "name": "Synthex Team" },
+  "homepage": "https://github.com/VnykzHub/Synthex",
+  "repository": "https://github.com/VnykzHub/Synthex",
   "license": "MIT",
   "keywords": [
     "multi-agent", "software-engineering", "data-engineering",
     "research", "mathematics", "project-management", "memory-vault"
-  ],
-  "skills": "./skills/",
-  "agents": "./agents/",
-  "hooks": "./hooks/hooks.json",
-  "mcpServers": "./.mcp.json",
-  "commandAliases": {
-    "synthex:add-component": "synthex:artifact-factory --type component",
-    "synthex:refine-component": "synthex:structure-validator --fix",
-    "synthex:compile-resources": "synthex:knowledge-graph --export resources",
-    "synthex:organize-inputs": "synthex:preflight --organize",
-    "synthex:pre-submission-checklist": "synthex:artifact-factory --validate"
-  },
-  "orchestration": {
-    "sole_orchestrator": "principal-investigator",
-    "max_parallel_agents": 8,
-    "worker_skills_cannot_spawn": true,
-    "orchestrator_skills": [
-      "delegate", "launch-pipeline", "init-project",
-      "pipeline", "report", "research-loop-cmd"
-    ]
-  }
+  ]
 }
