@@ -6,6 +6,8 @@ disable-model-invocation: true
 
 # organize-inputs (command: `/synthex:organize-inputs`)
 
+> **Deprecated:** Merged into [preflight](skills/preflight/SKILL.md). Use `/synthex:preflight --organize` instead.
+
 Organize and index files in `user-input/`. This command scans the input sandbox, categorizes files by type, generates a navigation index, and validates naming conventions. It is strictly read-only — it never moves, renames, or modifies files.
 
 ## Usage
@@ -42,6 +44,14 @@ Organize and index files in `user-input/`. This command scans the input sandbox,
 ## Validation
 - The `--output` path must resolve to a location under `user-input/`. Writing outside the input sandbox is not permitted.
 - File size is reported in human-readable format (KB, MB) for easy scanning.
+
+## Error Recovery
+
+- **Missing prerequisite:** If a required tool or dependency is unavailable, report it clearly with the exact command to install or path to check. Do not silently skip.
+- **Malformed input:** Validate key fields before processing. On failure, report the exact field name and expected format. Do not proceed with partial data.
+- **Timeout:** Set a 30-second budget for any blocking operation (MCP call, script execution, DB query). If exceeded, write partial results to `agent-output/partial/` and note what completed vs. what timed out.
+- **Empty result:** If no data matches the query, produce a valid empty output (not an error) with a note explaining the search scope and suggesting next steps.
+- **Partial failure:** If some sub-tasks succeed and others fail, report the split clearly: which succeeded, which failed, and whether the successes are usable independently.
 
 ## Output format
 ```

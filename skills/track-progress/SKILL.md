@@ -93,6 +93,14 @@ sqlite3 -header -column "$SYNTHEX_ROOT/logs/state_ledger.db" \
    ORDER BY timestamp DESC;"
 ```
 
+## Error Recovery
+
+- **Missing prerequisite:** If a required tool or dependency is unavailable, report it clearly with the exact command to install or path to check. Do not silently skip.
+- **Malformed input:** Validate key fields before processing. On failure, report the exact field name and expected format. Do not proceed with partial data.
+- **Timeout:** Set a 30-second budget for any blocking operation (MCP call, script execution, DB query). If exceeded, write partial results to `agent-output/partial/` and note what completed vs. what timed out.
+- **Empty result:** If no data matches the query, produce a valid empty output (not an error) with a note explaining the search scope and suggesting next steps.
+- **Partial failure:** If some sub-tasks succeed and others fail, report the split clearly: which succeeded, which failed, and whether the successes are usable independently.
+
 ## Data Sources
 
 Plain text, one line per data point. Each section header is on its own line followed by indented detail lines. Total output should be kept under 80 lines -- aggregate where counts are high rather than listing every item.

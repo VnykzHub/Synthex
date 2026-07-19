@@ -4,6 +4,8 @@ description: /synthex:compile-resources — Generates reference materials from s
 disable-model-invocation: true
 ---
 
+> **Deprecated:** Merged into [knowledge-graph](skills/knowledge-graph/SKILL.md). Use `/synthex:knowledge-graph --export resources` instead.
+
 You are the **Compile Resources** command skill for Synthex. When invoked (via the `/synthex:compile-resources` slash command), you generate a consolidated reference document by extracting and compiling information from source files or from descriptions provided interactively, using the Insight Compiler pattern.
 
 ## Behavior
@@ -26,6 +28,14 @@ A file at `E:/PROJECTS 2026/Synthex/synthex-plugin/resources.md` containing a co
 3. If both extractions and insights exist, compile from the insight report as the authoritative layer.
 4. Write `resources.md` to the project root with the compiled reference.
 5. Log the intent via `log_intent(agent="synthex-cli", action="skill.compile-resources", why="User invoked compile-resources")`.
+
+## Error Recovery
+
+- **Missing prerequisite:** If a required tool or dependency is unavailable, report it clearly with the exact command to install or path to check. Do not silently skip.
+- **Malformed input:** Validate key fields before processing. On failure, report the exact field name and expected format. Do not proceed with partial data.
+- **Timeout:** Set a 30-second budget for any blocking operation (MCP call, script execution, DB query). If exceeded, write partial results to `agent-output/partial/` and note what completed vs. what timed out.
+- **Empty result:** If no data matches the query, produce a valid empty output (not an error) with a note explaining the search scope and suggesting next steps.
+- **Partial failure:** If some sub-tasks succeed and others fail, report the split clearly: which succeeded, which failed, and whether the successes are usable independently.
 
 ## Rules
 - Always prefer the insight report over raw extractions when both exist. The insight report already performs cross-referencing and conflict resolution.

@@ -71,9 +71,184 @@ For generating test files:
 1. **Analyze.** Determine the artifact type and output path. Read any relevant schema or template from `knowledgebase/`.
 2. **Select pattern.** Choose the appropriate generator pattern (A-D) from above.
 3. **Populate.** Fill the template with the provided parameters. For code modules, generate both source and test files.
-4. **Validate.** Verify the generated artifact structurally. For YAML, validate against schema. For Markdown, check for unresolved placeholders. For code, check syntax with `python -c "import ast; ast.parse(open(path).read())"`.
-5. **Write.** Write to the specified output path under the caller's writable directory.
+4. **Validate (mandatory syntax gate).** Every artifact MUST pass its syntax gate before it is written to disk. This is a hard prerequisite — no artifact is written to its output path without passing validation.
+
+   **Gate rules:**
+
+   | Artifact type | Validation | Command / API |
+   |---|---|---|
+   | Python (`.py`) | Must compile | `ast.parse(content)` |
+   | YAML (`.yaml` / `.yml`) | Must parse | `yaml.safe_load(content)` |
+   | Markdown (`.md`) | No unresolved `{{...}}` placeholders | `re.findall(r"\{\{.*?\}\}", content)` |
+
+   **On validation failure:**
+   - Do NOT write the artifact to its intended output path.
+   - Write the invalid content to `agent-output/rejected/<original-filename>.rejected` with the parse error prepended.
+   - Record the error in the return manifest under `"errors"`.
+   - Abort generation of any dependent artifacts (e.g., skip test generation if the source module failed).
+
+   **Gate logic (concrete):**
+
+   ```python
+   import ast
+   import os
+   import re
+   from pathlib import Path
+
+   import yaml
+
+   REJECT_DIR = Path("agent-output/rejected")
+
+   def validate_artifact(path: str, content: str) -> list[str]:
+       """Return a list of validation errors (empty = valid)."""
+       errors = []
+       ext = os.path.splitext(path)[1]
+
+       if ext == ".py":
+           try:
+               ast.parse(content, filename=path)
+           except SyntaxError as e:
+               errors.append(f"Python syntax error in {path}: {e}")
+
+       elif ext in (".yaml", ".yml"):
+           try:
+               yaml.safe_load(content)
+           except yaml.YAMLError as e:
+               errors.append(f"YAML parse error in {path}: {e}")
+
+       elif ext == ".md":
+           unresolved = re.findall(r"\{\{.*?\}\}", content)
+           if unresolved:
+               errors.append(
+                   f"Unresolved placeholders in {path}: {unresolved}"
+               )
+
+       return errors
+
+   def reject_artifact(path: str, content: str, errors: list[str]) -> str:
+       """Write invalid content to the reject directory with error info."""
+       REJECT_DIR.mkdir(parents=True, exist_ok=True)
+       rejected_path = REJECT_DIR / f"{os.path.basename(path)}.rejected"
+       rejected_path.write_text(
+           "# REJECTED — Validation Failed\n"
+           f"# Source path: {path}\n"
+           f"# Errors:\n"
+           "#   " + "\n#   ".join(errors) + "\n\n"
+           f"{content}"
+       )
+       return str(rejected_path)
+
+   def validate_and_write(artifacts: list[dict]) -> dict:
+       """Validate all artifacts, write valid ones, reject invalid ones.
+
+       Each artifact dict: {"path": str, "content": str, "type": str}
+       Returns a manifest dict with "files" and "errors" keys.
+       """
+       manifest = {"files": [], "errors": []}
+       for art in artifacts:
+           errors = validate_artifact(art["path"], art["content"])
+           if errors:
+               reject_path = reject_artifact(art["path"], art["content"], errors)
+               manifest["errors"].append({
+                   "path": art["path"],
+                   "rejected_path": reject_path,
+                   "errors": errors,
+               })
+           else:
+               Path(art["path"]).parent.mkdir(parents=True, exist_ok=True)
+               Path(art["path"]).write_text(art["content"])
+               manifest["files"].append(art["path"])
+       return manifest
+   ```
+
+5. **Write or reject.**
+   - If validation passes: Write to the specified output path under the caller's writable directory.
+   - If validation fails: Write the invalid content to `agent-output/rejected/<original-filename>.rejected` via `reject_artifact()`, record the error in the manifest, and abort generation of any dependent artifacts.
 6. **Return.** Return the list of files written.
+
+### Type: component
+
+When invoked with `--type component`, the artifact-factory scaffolds a complete component skeleton under `agent-output/src/<name>/`:
+
+Directory structure:
+```
+agent-output/src/<component-name>/
+├── src/
+│   ├── __init__.py
+│   └── core.py
+├── tests/
+│   ├── __init__.py
+│   └── test_core.py
+├── config.yaml
+└── README.md
+```
+
+Parameters:
+- `<name>` (required): kebab-case name of the component, e.g., `data-validator`, `metric-collector`.
+- `--with-tests` (optional, default: true): Whether to generate test files alongside the source.
+- `--overwrite` (optional, default: false): Overwrite existing files at the target path.
+
+Workflow:
+1. Read naming conventions and template schemas from `knowledgebase/`.
+2. Determine the output path: `agent-output/src/<name>/`.
+3. Populate the directory structure with source, tests, config, and README.
+4. Generate test functions: one happy-path test per public function, one edge-case test per parameter with non-trivial constraints.
+5. Run the standard validation gate (syntax check for Python, structure check for config).
+6. Write all files.
+7. Return the file manifest.
+
+This mode replaces the former standalone `add-component` skill.
+
+### Mode: --validate
+
+When invoked with `--validate`, the artifact-factory runs the mandatory 4-step quality gate on one or more generated artifacts before delivery:
+
+**Four mandatory steps:**
+
+**Step 1: Requirements alignment**
+Confirm that every stated requirement from the source plan is addressed in the artifact.
+- [ ] Artifact purpose explicitly stated near the top of the file
+- [ ] Every requirement listed in the source plan has a corresponding implementation or explanation
+- [ ] No requirements are contradicted or ignored (if intentionally skipped, a comment explains why)
+- [ ] Acceptance criteria from the plan can be verified against the artifact
+
+**Step 2: Format compliance**
+Confirm the artifact follows structural and formatting conventions for its type.
+- [ ] File extension matches content type
+- [ ] Valid syntax (YAML/Python/Markdown per the syntax gate in Method step 4)
+- [ ] Naming conventions followed
+- [ ] No trailing whitespace, consistent indentation
+
+**Step 3: Quality baseline**
+Confirm the artifact meets minimum quality standards.
+- [ ] All public functions have docstrings (Python) or equivalent documentation
+- [ ] All function signatures have type hints (Python)
+- [ ] No dead code, commented-out blocks, or TODO/FIXME without an owner
+- [ ] Line length under 100 chars for code, under 120 for Markdown
+- [ ] Imports at top of file and sorted (standard library, third-party, local)
+
+**Step 4: Completeness gate**
+Confirm the artifact delivery is complete.
+- [ ] Primary artifact file exists at expected path
+- [ ] For Python modules: `__init__.py` exists and a corresponding `tests/test_<module>.py` exists
+- [ ] If dependencies exist: `requirements.txt` or `pyproject.toml` exists
+- [ ] README.md exists if at top level of `agent-output/src/`
+- [ ] Artifact is non-empty
+
+**Gate behavior:**
+- Steps are executed in order (1 -> 2 -> 3 -> 4). Fail fast — do not proceed if a step fails.
+- All-or-nothing: every step must pass for a PASS verdict.
+- Returns a structured checklist report (see Output format below).
+
+This mode replaces the former standalone `pre-submission-checklist` skill.
+
+## Error Recovery
+
+- **Missing prerequisite:** If a required tool or dependency is unavailable, report it clearly with the exact command to install or path to check. Do not silently skip.
+- **Malformed input:** Validate key fields before processing. On failure, report the exact field name and expected format. Do not proceed with partial data.
+- **Timeout:** Set a 30-second budget for any blocking operation (MCP call, script execution, DB query). If exceeded, write partial results to `agent-output/partial/` and note what completed vs. what timed out.
+- **Empty result:** If no data matches the query, produce a valid empty output (not an error) with a note explaining the search scope and suggesting next steps.
+- **Partial failure:** If some sub-tasks succeed and others fail, report the split clearly: which succeeded, which failed, and whether the successes are usable independently.
 
 ## Output format
 Return a file manifest:

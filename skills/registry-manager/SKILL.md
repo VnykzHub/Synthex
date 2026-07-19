@@ -123,6 +123,14 @@ Lock acquisition blocks for up to 30 seconds, then times out with an error. The 
 | `draft`       | Output exists but has not been reviewed or approved.     |
 | `queued`      | Ready to be picked up but not yet assigned.              |
 
+## Error Recovery
+
+- **Missing prerequisite:** If a required tool or dependency is unavailable, report it clearly with the exact command to install or path to check. Do not silently skip.
+- **Malformed input:** Validate key fields before processing. On failure, report the exact field name and expected format. Do not proceed with partial data.
+- **Timeout:** Set a 30-second budget for any blocking operation (MCP call, script execution, DB query). If exceeded, write partial results to `agent-output/partial/` and note what completed vs. what timed out.
+- **Empty result:** If no data matches the query, produce a valid empty output (not an error) with a note explaining the search scope and suggesting next steps.
+- **Partial failure:** If some sub-tasks succeed and others fail, report the split clearly: which succeeded, which failed, and whether the successes are usable independently.
+
 ## Pipeline Integration
 
 The registry manager is invoked at the start and end of each pipeline phase by the PipelineDirector agent. At phase start it reads the registry and identifies queued/draft components whose dependencies are all `locked`. At phase end it updates the registry with new status values and artifact references, then writes a diff to the pipeline log.

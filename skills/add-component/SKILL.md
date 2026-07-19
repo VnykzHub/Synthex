@@ -6,6 +6,8 @@ disable-model-invocation: true
 
 # add-component (command: `/synthex:add-component`)
 
+> **Deprecated:** Merged into [artifact-factory](skills/artifact-factory/SKILL.md). Use `/synthex:artifact-factory --type component` instead.
+
 Scaffold a new component from a template. This command creates a complete, convention-compliant component skeleton under `agent-output/src/` with source code, test suite, configuration, and documentation.
 
 ## Usage
@@ -50,6 +52,14 @@ Scaffold a new component from a template. This command creates a complete, conve
 - `component-name` must be valid kebab-case (lowercase letters, digits, hyphens only).
 - The target directory must not already exist unless `--overwrite` is set.
 - Generated Python files must pass `python -c "import ast; ast.parse(...)"` syntax check.
+
+## Error Recovery
+
+- **Missing prerequisite:** If a required tool or dependency is unavailable, report it clearly with the exact command to install or path to check. Do not silently skip.
+- **Malformed input:** Validate key fields before processing. On failure, report the exact field name and expected format. Do not proceed with partial data.
+- **Timeout:** Set a 30-second budget for any blocking operation (MCP call, script execution, DB query). If exceeded, write partial results to `agent-output/partial/` and note what completed vs. what timed out.
+- **Empty result:** If no data matches the query, produce a valid empty output (not an error) with a note explaining the search scope and suggesting next steps.
+- **Partial failure:** If some sub-tasks succeed and others fail, report the split clearly: which succeeded, which failed, and whether the successes are usable independently.
 
 ## Output format
 ```

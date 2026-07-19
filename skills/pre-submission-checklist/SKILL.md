@@ -5,6 +5,8 @@ description: Mandatory 4-step quality gate for all deliverables. Invoked by comp
 
 # pre-submission-checklist
 
+> **Deprecated:** Merged into [artifact-factory](skills/artifact-factory/SKILL.md). Use `/synthex:artifact-factory --validate` instead.
+
 Mandatory 4-step quality gate for all deliverables. This is the **final gate** before any artifact is written to `agent-output/src/`. Every step must pass. If any step fails, the artifact is blocked and the caller must fix the issue before re-invoking this skill.
 
 ## When to use
@@ -73,6 +75,14 @@ Mandatory 4-step quality gate for all deliverables. This is the **final gate** b
 2. **Run.** Execute each step in order (1→2→3→4). Do not proceed to the next step if the current one fails — fail fast.
 3. **Report.** For each step: output PASS or FAIL with a list of specific checks and their results. If FAIL, include the exact issue and guidance for fixing it.
 4. **Return.** Return the overall verdict (PASS/FAIL) and the step-level breakdown.
+
+## Error Recovery
+
+- **Missing prerequisite:** If a required tool or dependency is unavailable, report it clearly with the exact command to install or path to check. Do not silently skip.
+- **Malformed input:** Validate key fields before processing. On failure, report the exact field name and expected format. Do not proceed with partial data.
+- **Timeout:** Set a 30-second budget for any blocking operation (MCP call, script execution, DB query). If exceeded, write partial results to `agent-output/partial/` and note what completed vs. what timed out.
+- **Empty result:** If no data matches the query, produce a valid empty output (not an error) with a note explaining the search scope and suggesting next steps.
+- **Partial failure:** If some sub-tasks succeed and others fail, report the split clearly: which succeeded, which failed, and whether the successes are usable independently.
 
 ## Output format
 ```yaml

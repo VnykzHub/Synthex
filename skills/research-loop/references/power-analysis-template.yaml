@@ -1,0 +1,51 @@
+# Power Analysis Template
+# Neyman-Pearson Hypothesis Testing Framework
+# Migrated from the former experiment-design skill (removed 2026-07-19)
+#
+# This template documents the standard output format for controlled experiment
+# pre-registration. It includes:
+#   - Null and alternative hypothesis specification
+#   - Unit of analysis and randomization strategy
+#   - Control/treatment group design with expected sample sizes
+#   - Power analysis parameters (alpha, power, minimum_effect_size)
+#   - Confounding variable enumeration and mitigation strategies
+#   - Primary and secondary success metrics
+#   - Pre-registration timestamp and status
+#
+# Use this file as a reference when designing experiments within the
+# research-loop skill. Fill in all bracketed fields before use.
+
+experiment_id: "exp-YYYYMMDD-NNN"
+hypothesis:
+  null: "H0: [Treatment] has no effect on [metric]"
+  alternative: "H1: [Treatment] changes [metric] by at least [effect_size]"
+unit_of_analysis: "[user|session|transaction|model_seed]"
+randomization: "[simple_random|blocked|stratified]"
+control_group:
+  label: "[description of baseline]"
+  expected_n: [sample_size]
+treatment_group:
+  label: "[description of intervention]"
+  expected_n: [sample_size]
+power_analysis:
+  alpha: 0.05
+  power: 0.80
+  minimum_effect_size: [expected_minimum_detectable_effect]
+  required_sample_per_group: [calculated_sample_size]
+  method: "[statistical_test_name]"
+confounding_variables:
+  - variable: "[confound_1]"
+    mitigation: "[blocking|stratification|covariate_adjustment]"
+  - variable: "[confound_2]"
+    mitigation: "[strategy]"
+  - variable: "[confound_3]"
+    mitigation: "[strategy]"
+success_metrics:
+  primary: "[primary_metric]"
+  secondary:
+    - "[secondary_metric_1]"
+    - "[secondary_metric_2]"
+    - "[secondary_metric_3]"
+pre_registration:
+  date: "[ISO-8601_timestamp]"
+  status: registered

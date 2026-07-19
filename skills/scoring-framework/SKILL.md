@@ -71,6 +71,21 @@ Match artifacts by name, module path, or a provided baseline ID. If no prior sco
 5. **Check regression.** If a prior score exists, compute delta and flag if warranted.
 6. **Return.** Return the computed total, per-dimension breakdown, failure classifications, and regression status.
 
+## Preconditions
+
+- **Sandbox check:** Verify `SYNTHEX_ROOT` is set and `agent-output/` exists and is writable. Use: `test -d "$SYNTHEX_ROOT/agent-output" && test -w "$SYNTHEX_ROOT/agent-output" || { echo "agent-output/ not writable"; exit 1; }`
+- **MCP availability:** This skill has no hard MCP dependencies. It operates on provided data.
+- **Input existence:** For regression checks, verify that prior score reports exist in `agent-output/reports/reviews/`, `agent-output/reports/audits/`, or `agent-output/reports/risks/`. If none exist, state "No prior score -- first assessment" and proceed.
+- If any precondition fails, report which one failed and stop -- do not proceed with partial preconditions.
+
+## Error Recovery
+
+- **Missing prerequisite:** If a required tool or dependency is unavailable, report it clearly with the exact command to install or path to check. Do not silently skip.
+- **Malformed input:** Validate key fields before processing. On failure, report the exact field name and expected format. Do not proceed with partial data.
+- **Timeout:** Set a 30-second budget for any blocking operation (MCP call, script execution, DB query). If exceeded, write partial results to `agent-output/partial/` and note what completed vs. what timed out.
+- **Empty result:** If no data matches the query, produce a valid empty output (not an error) with a note explaining the search scope and suggesting next steps.
+- **Partial failure:** If some sub-tasks succeed and others fail, report the split clearly: which succeeded, which failed, and whether the successes are usable independently.
+
 ## Output format
 Return a structured result:
 ```json

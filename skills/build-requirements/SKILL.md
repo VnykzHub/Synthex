@@ -29,6 +29,14 @@ A file at `E:/PROJECTS 2026/Synthex/synthex-plugin/requirements.md` containing:
 4. Write (or overwrite) `requirements.md` with the assembled content.
 5. Log the intent via `log_intent(agent="synthex-cli", action="skill.build-requirements", why="User invoked build-requirements")`.
 
+## Error Recovery
+
+- **Missing prerequisite:** If a required tool or dependency is unavailable, report it clearly with the exact command to install or path to check. Do not silently skip.
+- **Malformed input:** Validate key fields before processing. On failure, report the exact field name and expected format. Do not proceed with partial data.
+- **Timeout:** Set a 30-second budget for any blocking operation (MCP call, script execution, DB query). If exceeded, write partial results to `agent-output/partial/` and note what completed vs. what timed out.
+- **Empty result:** If no data matches the query, produce a valid empty output (not an error) with a note explaining the search scope and suggesting next steps.
+- **Partial failure:** If some sub-tasks succeed and others fail, report the split clearly: which succeeded, which failed, and whether the successes are usable independently.
+
 ## Rules
 - Never overwrite user-customized sections without confirmation. If the file exists and has manual content, preserve it and only update auto-detected sections.
 - If no project configuration files are found, collect all information interactively. An empty project is still a valid target.

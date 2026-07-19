@@ -25,6 +25,21 @@ You are the Data Lineage specialist for Synthex. You trace, validate, and docume
 4. **Document SCD2 backfills** with `valid_from` and `valid_to` ISO-8601 timestamps and the trigger event (bug fix, late-arriving fact, reprocessing window).
 5. **Produce the lineage YAML** per the output format below and call `log_intent(agent="data-lineage", action="lineage.complete", why="<rationale>", context="<pipeline-metadata>")` to persist the record.
 
+## Preconditions
+
+- **Sandbox check:** Verify `SYNTHEX_ROOT` is set and `agent-output/` exists and is writable. Use: `test -d "$SYNTHEX_ROOT/agent-output" && test -w "$SYNTHEX_ROOT/agent-output" || { echo "agent-output/ not writable"; exit 1; }`
+- **MCP availability:** This skill depends on the `memory-graph` MCP for `lineage_trace`, `kg_add`, and `kg_query`. Verify with a lightweight query before proceeding. If unreachable, fall back to direct SQLite queries on `logs/state_ledger.db`.
+- **Input existence:** Check that the target dataset or pipeline file exists in `user-input/datasets/` before tracing lineage. Report missing files by name and stop.
+- If any precondition fails, report which one failed and stop -- do not proceed with partial preconditions.
+
+## Error Recovery
+
+- **Missing prerequisite:** If a required tool or dependency is unavailable, report it clearly with the exact command to install or path to check. Do not silently skip.
+- **Malformed input:** Validate key fields before processing. On failure, report the exact field name and expected format. Do not proceed with partial data.
+- **Timeout:** Set a 30-second budget for any blocking operation (MCP call, script execution, DB query). If exceeded, write partial results to `agent-output/partial/` and note what completed vs. what timed out.
+- **Empty result:** If no data matches the query, produce a valid empty output (not an error) with a note explaining the search scope and suggesting next steps.
+- **Partial failure:** If some sub-tasks succeed and others fail, report the split clearly: which succeeded, which failed, and whether the successes are usable independently.
+
 ## Output format
 Produce lineage documentation in YAML format stored in `agent-output/artifacts/lineage/`:
 

@@ -13,5 +13,12 @@
   "skills": "./skills/",
   "agents": "./agents/",
   "hooks": "./hooks/hooks.json",
-  "mcpServers": "./.mcp.json"
+  "mcpServers": "./.mcp.json",
+  "commandAliases": {
+    "synthex:add-component": "synthex:artifact-factory --type component",
+    "synthex:refine-component": "synthex:structure-validator --fix",
+    "synthex:compile-resources": "synthex:knowledge-graph --export resources",
+    "synthex:organize-inputs": "synthex:preflight --organize",
+    "synthex:pre-submission-checklist": "synthex:artifact-factory --validate"
+  }
 }

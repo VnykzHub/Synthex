@@ -17,7 +17,9 @@ This skill inherits the rigorous experimental design methodology from `experimen
 - **Confounder mitigation** — Enumerate variables that could correlate with both treatment and outcome. Mitigate via blocking, stratification, or covariate adjustment.
 - **Pre-registration** — Document the design, analysis plan, and stopping rules before examining outcome data.
 
-For the complete detail on each of these areas — including worked examples, variable taxonomy, and the YAML design template — see the superseded `experiment-design` skill at `skills/experiment-design/SKILL.md`.
+For the complete detail on each of these areas — including worked examples, variable taxonomy, and the YAML design template — see the migrated power-analysis template at `references/power-analysis-template.yaml`.
+
+> **Migration note:** This skill replaces the former standalone experiment-design skill (removed 2026-07-19). For power analysis templates, see references/power-analysis-template.yaml. All experiment design requests now route here.
 
 ## The Research Loop (6 Steps)
 
@@ -108,6 +110,21 @@ hypothesis_tree:
 - **After each phase**: Call `mcp__plugin_synthex_memory-graph__log_intent` to record progress.
 - **Hypothesis tree updates**: Call `mcp__plugin_synthex_memory-graph__kg_add` to link hypothesis nodes to experiment artifacts and metric outcomes.
 - **Reflection persistence**: Store full reflection text in the Memory Vault with the hypothesis ID as primary key and the iteration number as version.
+
+## Preconditions
+
+- **Sandbox check:** Verify `SYNTHEX_ROOT` is set and `agent-output/` exists and is writable. Use: `test -d "$SYNTHEX_ROOT/agent-output" && test -w "$SYNTHEX_ROOT/agent-output" || { echo "agent-output/ not writable"; exit 1; }`
+- **MCP availability:** This skill depends on the `memory-graph` MCP for `vector_retrieve`, `log_intent`, and `kg_add`. Verify with a lightweight query before proceeding. If unreachable, document the limitation and suggest manual fallback.
+- **Input existence:** Check that the `experiment-design` skill is available and that prior experiment artifacts exist in `agent-output/artifacts/experiments/` before starting a new loop. Report missing files by name and stop.
+- If any precondition fails, report which one failed and stop -- do not proceed with partial preconditions.
+
+## Error Recovery
+
+- **Missing prerequisite:** If a required tool or dependency is unavailable, report it clearly with the exact command to install or path to check. Do not silently skip.
+- **Malformed input:** Validate key fields before processing. On failure, report the exact field name and expected format. Do not proceed with partial data.
+- **Timeout:** Set a 30-second budget for any blocking operation (MCP call, script execution, DB query). If exceeded, write partial results to `agent-output/partial/` and note what completed vs. what timed out.
+- **Empty result:** If no data matches the query, produce a valid empty output (not an error) with a note explaining the search scope and suggesting next steps.
+- **Partial failure:** If some sub-tasks succeed and others fail, report the split clearly: which succeeded, which failed, and whether the successes are usable independently.
 
 ## Output Format
 

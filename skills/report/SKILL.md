@@ -74,6 +74,21 @@ Render via one of these pipelines:
 
 Write to `agent-output/reports/report-<topic>.pdf`.
 
+## Preconditions
+
+- **Sandbox check:** Verify `SYNTHEX_ROOT` is set and `agent-output/` exists and is writable. Use: `test -d "$SYNTHEX_ROOT/agent-output" && test -w "$SYNTHEX_ROOT/agent-output" || { echo "agent-output/ not writable"; exit 1; }`
+- **MCP availability:** This skill depends on the `visualization` MCP (`react_component`, `preview_ui`, `threejs_scaffold`) and optionally `heavy-compute` for PDF rendering. Verify availability before proceeding. If unreachable, fall back to standalone HTML generation or local CLI tools (weasyprint, pandoc).
+- **Input existence:** Check that source reports exist in `agent-output/reports/` and `agent-output/artifacts/` before attempting synthesis. Report missing directories by name and stop.
+- If any precondition fails, report which one failed and stop -- do not proceed with partial preconditions.
+
+## Error Recovery
+
+- **Missing prerequisite:** If a required tool or dependency is unavailable, report it clearly with the exact command to install or path to check. Do not silently skip.
+- **Malformed input:** Validate key fields before processing. On failure, report the exact field name and expected format. Do not proceed with partial data.
+- **Timeout:** Set a 30-second budget for any blocking operation (MCP call, script execution, DB query). If exceeded, write partial results to `agent-output/partial/` and note what completed vs. what timed out.
+- **Empty result:** If no data matches the query, produce a valid empty output (not an error) with a note explaining the search scope and suggesting next steps.
+- **Partial failure:** If some sub-tasks succeed and others fail, report the split clearly: which succeeded, which failed, and whether the successes are usable independently.
+
 ## Step 5 -- Log and report
 
 ```bash

@@ -60,6 +60,43 @@ Read-only dry-run validation that inspects the current project state and reports
    - Print the report to the user in a clear, readable format.
    - Do not save the report to disk — it is informational output only.
 
+### Flag: --organize
+
+When `--organize` is passed, preflight extends its validation to scan and catalog files in the `user-input/` sandbox:
+
+**Additional checks (run after step 5, before step 7):**
+
+1. **Scan.** List all files under `user-input/` recursively using Glob, grouped by directory.
+2. **Categorize.** For each file, determine type based on path, extension, and content heuristics:
+   - `assignment` — files in `user-input/assignments/` or containing `assignment` in path
+   - `dataset` — CSV, JSON, Parquet, or similar data files
+   - `reference` — Markdown, PDF, or text files containing reference material
+   - `config` — YAML, TOML, INI, or JSON configuration files
+   - `other` — files that do not match any category
+3. **Validate naming.** Check each file and directory name against project naming conventions. Report violations as warnings.
+4. **Generate index.** Produce a Markdown index at `user-input/INDEX.md` with:
+   - A summary table (total files, by category, by directory)
+   - A per-directory file listing with name, type, size, and last modified time
+   - Naming convention warnings
+
+**Constraints:**
+- This flag is read-only — it never moves, renames, or modifies files in `user-input/`.
+- The only file created is the index at `user-input/INDEX.md`.
+- If `user-input/` does not exist, it is flagged in the preflight report rather than causing an error.
+
+**Preflight report extension:**
+When `--organize` is used, the report gains an additional section:
+
+```
+--- Input Organization ---
+  Total files: <count>
+  By category: assignment (N), dataset (N), reference (N), config (N)
+  Naming warnings: <count>
+  Index: user-input/INDEX.md [GENERATED] | [NONE]
+```
+
+This flag replaces the former standalone `organize-inputs` skill.
+
 ## Preflight report format
 
 ```
@@ -109,6 +146,14 @@ OVERALL STATUS: PASS | PASS_WITH_WARNINGS | FAIL
 - If `pipeline-state.yaml` cannot be parsed, the report flags it as a critical issue with the parse error details.
 - If the specified project does not exist, return a detailed error listing available projects.
 - This skill does not throw errors on missing data — it reports findings. Every condition is reported as PASS, WARNING, or FAIL in the report.
+
+## Error Recovery
+
+- **Missing prerequisite:** If a required tool or dependency is unavailable, report it clearly with the exact command to install or path to check. Do not silently skip.
+- **Malformed input:** Validate key fields before processing. On failure, report the exact field name and expected format. Do not proceed with partial data.
+- **Timeout:** Set a 30-second budget for any blocking operation (MCP call, script execution, DB query). If exceeded, write partial results to `agent-output/partial/` and note what completed vs. what timed out.
+- **Empty result:** If no data matches the query, produce a valid empty output (not an error) with a note explaining the search scope and suggesting next steps.
+- **Partial failure:** If some sub-tasks succeed and others fail, report the split clearly: which succeeded, which failed, and whether the successes are usable independently.
 
 ## Rules
 

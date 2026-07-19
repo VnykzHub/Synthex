@@ -170,6 +170,48 @@ def check_required_files(root: Path, required: list[str]) -> dict[str, bool | li
     return {"passing": len(findings) == 0, "findings": findings}
 ```
 
+### Mode: --fix
+
+When invoked with `--fix`, the structure validator applies structural corrections to components non-destructively:
+
+**Capabilities:**
+- **Naming corrections**: Renames files to match project conventions (kebab-case for files, snake_case for Python modules)
+- **Convention alignment**: Fixes directory structure, missing `__init__.py` files, and incorrect file placement
+- **Import updates**: Updates import statements to reflect renamed files
+
+**Non-destructive approach:**
+- All fixes are applied as surgical edits (targeted changes, not full file rewrites)
+- Before applying changes, a patch report is generated at `agent-output/reports/refinements/<component-name>-refinement.md`
+- The report lists every proposed change and whether it can be auto-applied
+- Public API changes are flagged requiring manual review — they are not auto-applied
+
+**Usage in scripts:**
+```python
+def apply_fixes(component_path: Path, findings: list[dict]) -> list[dict]:
+    """Apply non-destructive structural fixes to a component.
+
+    Each finding dict: {"type": str, "path": str, "fix": dict}
+    Returns list of applied fixes with status.
+    """
+```
+
+This mode replaces the former standalone `refine-component` skill.
+
+## Preconditions
+
+- **Sandbox check:** Verify `SYNTHEX_ROOT` is set and the target directory exists. Use: `test -d "$SYNTHEX_ROOT" || { echo "SYNTHEX_ROOT not set or not found"; exit 1; }`
+- **MCP availability:** This skill has no MCP dependencies. It uses Python standard library only (plus PyYAML for YAML validation).
+- **Input existence:** If schema files are referenced, check they exist in `knowledgebase/schemas/`. If validating a specific target, verify the target directory or file exists. Report missing paths by name and stop.
+- If any precondition fails, report which one failed and stop -- do not proceed with partial preconditions.
+
+## Error Recovery
+
+- **Missing prerequisite:** If a required tool or dependency is unavailable, report it clearly with the exact command to install or path to check. Do not silently skip.
+- **Malformed input:** Validate key fields before processing. On failure, report the exact field name and expected format. Do not proceed with partial data.
+- **Timeout:** Set a 30-second budget for any blocking operation (MCP call, script execution, DB query). If exceeded, write partial results to `agent-output/partial/` and note what completed vs. what timed out.
+- **Empty result:** If no data matches the query, produce a valid empty output (not an error) with a note explaining the search scope and suggesting next steps.
+- **Partial failure:** If some sub-tasks succeed and others fail, report the split clearly: which succeeded, which failed, and whether the successes are usable independently.
+
 ## Output format
 Return a structured result:
 ```json

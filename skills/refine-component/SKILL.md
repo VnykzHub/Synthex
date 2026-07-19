@@ -6,6 +6,8 @@ disable-model-invocation: true
 
 # refine-component (command: `/synthex:refine-component`)
 
+> **Deprecated:** Merged into [structure-validator](skills/structure-validator/SKILL.md). Use `/synthex:structure-validator --fix` instead.
+
 Refine an existing component by applying structural fixes, naming corrections, and convention alignment. This command is non-destructive by default — it creates a patch file describing the suggested changes and optionally applies them.
 
 ## Usage
@@ -56,6 +58,14 @@ Refinement analysis: data-validator
   Auto-fixable: 2 of 3
   Apply with: /synthex:refine-component data-validator --fix
 ```
+
+## Error Recovery
+
+- **Missing prerequisite:** If a required tool or dependency is unavailable, report it clearly with the exact command to install or path to check. Do not silently skip.
+- **Malformed input:** Validate key fields before processing. On failure, report the exact field name and expected format. Do not proceed with partial data.
+- **Timeout:** Set a 30-second budget for any blocking operation (MCP call, script execution, DB query). If exceeded, write partial results to `agent-output/partial/` and note what completed vs. what timed out.
+- **Empty result:** If no data matches the query, produce a valid empty output (not an error) with a note explaining the search scope and suggesting next steps.
+- **Partial failure:** If some sub-tasks succeed and others fail, report the split clearly: which succeeded, which failed, and whether the successes are usable independently.
 
 ## Output format (with --fix)
 ```
