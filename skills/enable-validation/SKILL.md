@@ -1,8 +1,10 @@
 ---
 name: enable-validation
-description: /synthex:enable-validation — Enable validation scripts for a component or the entire pipeline. Generates or links CI-ready validation scripts under agent-output/scripts/.
+description: /synthex:enable-validation — Enable validation scripts for a component or the entire pipeline. Generates or links CI-ready validation scripts under agent-output/scripts/. Use when the user runs /synthex:enable-validation to generate post-pipeline validation scripts.
 disable-model-invocation: true
 ---
+
+> **⚠ Orchestration entry point:** this skill coordinates multiple agents and tools rather than performing a single atomic task. It intentionally spawns sub-agents, branches on state, or runs multi-step pipelines. See BUILD_PLAN.md Phase 17, Rec 3 for design rationale.
 
 # enable-validation (command: `/synthex:enable-validation`)
 
@@ -25,6 +27,10 @@ Enable validation scripts for a component or the entire pipeline. This command g
 - `--ci` (optional, default: `generic`): Generate CI integration configuration.
   - `github-actions` — generates a `.github/workflows/validate.yml` workflow file.
   - `generic` — generates a shell script that can be run locally or in any CI.
+- `--force` (optional, flag): Override safety checks and overwrite existing validation scripts and CI config.
+  - **What it overrides**: Regeneration of already-existing scripts (including any manual edits made to them), overwrite of CI configuration files, and re-creation of the entire `agent-output/scripts/validate/` tree.
+  - **When to use**: CI/CD pipeline bootstrapping, fresh repository setups, re-initialization after schema changes, or automated provisioning where no manual edits exist.
+  - **Without `--force`** (default): The skill runs in dry-run mode for existing scripts — it detects that a file already exists, warns the user with the path and modification timestamp, and skips regeneration. No files are overwritten unless `--force` is explicitly passed. This protects manual customizations.
 
 ## Workflow
 1. Determine the validation scope from `--target`.

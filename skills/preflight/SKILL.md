@@ -1,6 +1,6 @@
 ---
 name: preflight
-description: /synthex:preflight — Read-only dry-run validation that reports what's ready and what's missing before pipeline execution.
+description: /synthex:preflight — Read-only dry-run validation that reports what's ready and what's missing before pipeline execution. Use when the user runs /synthex:preflight for a read-only dry-run validation before pipeline execution.
 disable-model-invocation: true
 ---
 

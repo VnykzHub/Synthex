@@ -1,9 +1,11 @@
 ---
 name: report
-description: "/synthex:report --type ppt|html|pdf -- Synthesize agent-output/reports into a deliverable using Documentation Engineer + visualization MCP."
+description: "/synthex:report --type ppt|html|pdf -- Synthesize agent-output/reports into a deliverable using Documentation Engineer + visualization MCP. Use when the user runs /synthex:report to synthesize accumulated outputs into a deliverable."
 allowed-tools: Read(*) Bash(sqlite3 *) Bash(echo *) Bash(find *) Bash(mkdir *) Bash(test *)
 disable-model-invocation: true
 ---
+
+> **⚠ Orchestration entry point:** this skill coordinates multiple agents and tools rather than performing a single atomic task. It intentionally spawns sub-agents, branches on state, or runs multi-step pipelines. See BUILD_PLAN.md Phase 17, Rec 3 for design rationale.
 
 # /synthex:report --type ppt|html|pdf -- Synthesize results into a deliverable
 
@@ -45,29 +47,30 @@ Read the source files. Identify: key findings, data visualizations needed, code 
 
 ### --type html
 
-Use the visualization MCP to scaffold an interactive report:
+Generate a static HTML report with embedded charts:
 
-- `mcp__plugin_synthex_visualization__react_component(name="report-<topic>", spec="<json spec>")`
-- `mcp__plugin_synthex_visualization__preview_ui(path="<path>")`
+- **Build pipeline**: write content as a single self-contained `.html` file using inline `<style>` and `<script>` blocks. Embed visualizations as inline SVG or Chart.js `<canvas>` elements (no external network requests at render time).
+- **MCP scaffold option**: `mcp__plugin_synthex_visualization__react_component(name="report-<topic>", spec="<json spec>")` then `mcp__plugin_synthex_visualization__preview_ui(path="<path>")`.
 
 Write to `agent-output/artifacts/report-<topic>.html`.
 
 ### --type ppt
 
-Use the presentation domain skill to build slides:
+Use `python-pptx` to build slides:
 
-- Outline of slides with content per slide
-- Use threejs_scaffold for 3D charts if needed
-- `mcp__plugin_synthex_visualization__threejs_scaffold(name="chart-<name>", kind="scene")`
+1. Create a `Presentation()` and select slide layouts via `prs.slide_layouts[index]`.
+2. Populate title, content, and chart shapes per slide.
+3. Optionally scaffold 3D visuals with `mcp__plugin_synthex_visualization__threejs_scaffold(name="chart-<name>", kind="scene")`.
 
 Write to `agent-output/artifacts/report-<topic>.pptx`.
 
 ### --type pdf
 
-Use the whitepaper domain skill:
+Render via one of these pipelines:
 
-- Compile markdown to PDF via pandoc or LaTeX
-- Include any generated visualizations as figures
+- **weasyprint** (HTML to PDF): generate an HTML report with embedded `<style>` and `<img>` tags for charts, then run `weasyprint input.html output.pdf`.
+- **pandoc** (Markdown to PDF via LaTeX): write the report in Markdown with YAML front-matter (title, author, date), then run `pandoc report.md -o report.pdf --pdf-engine=xelatex`.
+- Include any generated visualizations as figures.
 
 Write to `agent-output/reports/report-<topic>.pdf`.
 

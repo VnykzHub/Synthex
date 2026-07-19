@@ -1,8 +1,10 @@
 ---
 name: init-project
-description: /synthex:init-project "<name>" — Scaffolds complete project structure, runs interactive setup, and launches the pipeline via EnvironmentBuilder -> PipelineDirector.
+description: /synthex:init-project "<name>" — Scaffolds complete project structure, runs interactive setup, and launches the pipeline via EnvironmentBuilder -> PipelineDirector. Use when the user runs /synthex:init-project to scaffold a complete project and launch the pipeline.
 disable-model-invocation: true
 ---
+
+> **⚠ Orchestration entry point:** this skill coordinates multiple agents and tools rather than performing a single atomic task. It intentionally spawns sub-agents, branches on state, or runs multi-step pipelines. See BUILD_PLAN.md Phase 17, Rec 3 for design rationale.
 
 # Init Project Skill
 

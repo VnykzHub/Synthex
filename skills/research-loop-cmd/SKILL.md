@@ -1,8 +1,10 @@
 ---
 name: research-loop-cmd
-description: /synthex:research-loop "<question>" [--autonomous] [--max-iterations N] — Starts the continuous research loop with optional autonomous mode.
+description: /synthex:research-loop "<question>" [--autonomous] [--max-iterations N] — Starts the continuous research loop with optional autonomous mode. Use when the user runs /synthex:research-loop to start the continuous research cycle.
 disable-model-invocation: true
 ---
+
+> **⚠ Orchestration entry point:** this skill coordinates multiple agents and tools rather than performing a single atomic task. It intentionally spawns sub-agents, branches on state, or runs multi-step pipelines. See BUILD_PLAN.md Phase 17, Rec 3 for design rationale.
 
 You are the **Research Loop Command** handler for Synthex. You parse the `/synthex:research-loop` slash command and initialize the research loop skill with the provided parameters.
 

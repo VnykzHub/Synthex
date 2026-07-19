@@ -1,9 +1,11 @@
 ---
 name: experiment
-description: "/synthex:experiment -- Full experiment lifecycle: design, run, compare, report. Launch Research Scientist with experiment-design skill, heavy-compute MCP, and Documentation Engineer."
+description: "/synthex:experiment -- Full experiment lifecycle: design, run, compare, report. Launch Research Scientist with experiment-design skill, heavy-compute MCP, and Documentation Engineer. Use when the user runs /synthex:experiment to run the full experiment lifecycle from design through reporting."
 disable-model-invocation: true
 allowed-tools: Bash(sqlite3 *) Bash(echo *) Bash(find *) Bash(mkdir *) Bash(test *) Bash(python3 *)
 ---
+
+> **⚠ Orchestration entry point:** this skill coordinates multiple agents and tools rather than performing a single atomic task. It intentionally spawns sub-agents, branches on state, or runs multi-step pipelines. See BUILD_PLAN.md Phase 17, Rec 3 for design rationale.
 
 # /synthex:experiment -- Full experiment lifecycle
 
@@ -61,6 +63,8 @@ Load the `experiment-design` domain skill from skills/experiment-design/SKILL.md
 - Statistical power analysis
 - Expected outcomes and success criteria
 
+For experiment methodology, delegates to the research-loop skill (supersedes experiment-design).
+
 Survey `user-input/` for relevant data or reference material:
 
 ```bash
@@ -70,6 +74,12 @@ find "$SYNTHEX_ROOT/user-input" -type f 2>/dev/null | head -30
 Write the experiment design to `agent-output/reports/experiment-<name>/design.md`.
 
 ## Step 4 -- Phase 2: Run
+
+> **Tool-unavailable note**: If the heavy-compute MCP (`sympy_solve`, `profile_script`, `docker_run`) is unavailable, run the analysis locally with these fallback instructions:
+> - For `sympy_solve` fallback: Use `python3 -c "import sympy; ..."` in a local Python script. Write the script to `agent-output/scripts/experiment-fallback/` and capture stdout.
+> - For `profile_script` fallback: Use `python3 -m cProfile <script.py>` directly.
+> - For `docker_run` fallback: Execute the command directly on the host with explicit output capture, noting the environment difference.
+> - Document which MCP tool was unavailable and which fallback was used in the experiment report.
 
 Execute the experiment. Use the heavy-compute MCP for computational steps:
 

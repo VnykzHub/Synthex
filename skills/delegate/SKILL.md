@@ -1,9 +1,11 @@
 ---
 name: delegate
-description: "/synthex:delegate -- Send a task to the Principal Investigator (PI) for decomposition, context retrieval from vector store, sub-agent assignment, and roadmap tracking."
+description: "/synthex:delegate -- Send a task to the Principal Investigator (PI) for decomposition, context retrieval from vector store, sub-agent assignment, and roadmap tracking. Use when the user runs /synthex:delegate to hand a task to the Principal Investigator for decomposition and execution."
 disable-model-invocation: true
 allowed-tools: Bash(sqlite3 *) Bash(echo *) Bash(mkdir *) Bash(find *)
 ---
+
+> **⚠ Orchestration entry point:** this skill coordinates multiple agents and tools rather than performing a single atomic task. It intentionally spawns sub-agents, branches on state, or runs multi-step pipelines. See BUILD_PLAN.md Phase 17, Rec 3 for design rationale.
 
 # /synthex:delegate -- PI orchestration: retrieve context, decompose, spawn, track
 

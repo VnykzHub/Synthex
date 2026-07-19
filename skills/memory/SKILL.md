@@ -1,6 +1,6 @@
 ---
 name: memory
-description: "/synthex:memory <query> -- Query the Memory Vault (vector_retrieve) and display top 5 chunks with source and score. Falls back to python3 CLI if MCP unavailable."
+description: "/synthex:memory <query> -- Query the Memory Vault (vector_retrieve) and display top 5 chunks with source and score. Falls back to python3 CLI if MCP unavailable. Use when the user runs /synthex:memory to query the vector Memory Vault for semantically relevant past work."
 disable-model-invocation: true
 allowed-tools: Bash(sqlite3 *) Bash(echo *) Bash(test *) Bash(python3 *) Bash(grep *) Bash(cat *)
 ---

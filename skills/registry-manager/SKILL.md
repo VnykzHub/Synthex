@@ -73,6 +73,17 @@ locked    --> draft        (hotfix / revision)
 
 Any other transition produces a validation error.
 
+**Update return format:**
+
+```yaml
+# Update return
+- id: comp-001
+  status: in-progress     # new status
+  previous_status: locked # old status
+  version: 1.0.1          # incremented
+  last_modified: timestamp
+```
+
 ### Diff
 
 Compare two registry snapshots (e.g., before and after a pipeline phase) and return a structured diff:

@@ -2,7 +2,7 @@
 name: risk-identifier
 description: Identifies, categorizes, and quantifies risks across technical, data, process, and compliance dimensions. Use PROACTIVELY when a plan or artifact needs risk assessment before proceeding.
 model: sonnet
-tools: Read, Grep, Glob
+tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, mcp__plugin_synthex_memory-graph__task_create, mcp__plugin_synthex_memory-graph__log_intent
 skills: scoring-framework
 ---
 

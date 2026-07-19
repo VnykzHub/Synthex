@@ -1,6 +1,6 @@
 ---
 name: structure-validator
-description: Python validation patterns for folder boundaries, YAML structures, naming conventions, and file existence. Invoked by quality-automation and artifact-verifier for generating validation logic and by any agent that needs structural validation of artifacts.
+description: Python validation patterns for folder boundaries, YAML structures, naming conventions, and file existence. Invoked by quality-automation and artifact-verifier for generating validation logic and by any agent that needs structural validation of artifacts. Use when validating folder boundaries, YAML structures, naming conventions, or file existence against a project schema.
 ---
 
 # structure-validator
@@ -118,6 +118,57 @@ def validate_file_existence(root: Path, required_files: list[str]) -> list[dict]
 4. **Execute.** Run the validation function(s) against the target.
 5. **Aggregate.** Combine results from multiple patterns. Deduplicate related issues.
 6. **Return.** Return the combined result list with each finding's severity.
+
+## Real Python implementations
+
+Below are concrete, runnable implementations of the four core validation functions. Each returns `dict[str, bool | list[str]]` with a `"passing"` boolean and a `"findings"` list.
+
+```python
+from pathlib import Path
+import re, yaml
+
+def check_boundaries(root: Path, expected_dirs: list[str]) -> dict[str, bool | list[str]]:
+    """Validate that all expected directories exist under root."""
+    findings = []
+    for d in expected_dirs:
+        if not (root / d).is_dir():
+            findings.append(f"missing_dir:{d}")
+    return {"passing": len(findings) == 0, "findings": findings}
+
+def check_yaml_files(root: Path, required_keys: dict[str, list[str]]) -> dict[str, bool | list[str]]:
+    """Validate YAML files contain required keys; requires PyYAML."""
+    findings = []
+    for path, keys in required_keys.items():
+        fp = root / path
+        if not fp.is_file():
+            findings.append(f"missing:{path}")
+            continue
+        data = yaml.safe_load(fp.read_text()) or {}
+        for k in keys:
+            if k not in data:
+                findings.append(f"missing_key:{path}:{k}")
+    return {"passing": len(findings) == 0, "findings": findings}
+
+def check_naming(root: Path, patterns: dict[str, str]) -> dict[str, bool | list[str]]:
+    """Validate file/directory names match named regex patterns."""
+    findings = []
+    for label, regex in patterns.items():
+        for f in root.rglob("*"):
+            if not re.match(regex, f.name):
+                findings.append(f"violation:{f.relative_to(root)}:expected_{label}")
+    return {"passing": len(findings) == 0, "findings": findings}
+
+def check_required_files(root: Path, required: list[str]) -> dict[str, bool | list[str]]:
+    """Validate that required files exist and are non-empty."""
+    findings = []
+    for rp in required:
+        fp = root / rp
+        if not fp.is_file():
+            findings.append(f"missing:{rp}")
+        elif fp.stat().st_size == 0:
+            findings.append(f"empty:{rp}")
+    return {"passing": len(findings) == 0, "findings": findings}
+```
 
 ## Output format
 Return a structured result:

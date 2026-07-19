@@ -1,11 +1,13 @@
 ---
 name: status
-description: "/synthex:status -- Query the task DB (intents.db tasks table) and render a Markdown table of current tasks."
+description: "/synthex:status -- Query the task DB (intents.db tasks table) and render a Markdown table of current tasks. Use when the user runs /synthex:status to display the current task board."
 disable-model-invocation: true
 allowed-tools: Bash(sqlite3 *) Bash(echo *) Bash(test *)
 ---
 
 # /synthex:status -- Display active agent tasks
+
+> **MCP fallback**: This skill queries the task database directly via sqlite3 rather than depending on an MCP `task_list` tool. If MCP task_list is unavailable, the skill falls back to `sqlite3 "$SYNTHEX_ROOT/logs/intents.db" "SELECT * FROM tasks;"` — the same approach used throughout. No MCP dependency is required.
 
 ## Step 1 -- Resolve SYNTHEX_ROOT
 

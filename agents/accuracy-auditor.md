@@ -2,7 +2,7 @@
 name: accuracy-auditor
 description: Five-dimension accuracy auditor that evaluates artifacts against source requirements with a re-score loop. Use PROACTIVELY when an artifact must be certified as accurate before final acceptance.
 model: sonnet
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, Agent, TaskCreate, mcp__plugin_synthex_memory-graph__task_create, mcp__plugin_synthex_memory-graph__log_intent
 skills: scoring-framework
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: synthex-init
-description: "/synthex:synthex-init -- Scaffold the runtime sandbox directories, create SQLite databases with full schema, and mark init complete. Call once at project setup."
+description: "/synthex:synthex-init -- Scaffold the runtime sandbox directories, create SQLite databases with full schema, and mark init complete. Call once at project setup. Use when the user runs /synthex:synthex-init to scaffold the runtime sandbox at project start."
 disable-model-invocation: true
 allowed-tools: Bash(sqlite3 *) Bash(mkdir *) Bash(echo *) Bash(test *) Bash(find *)
 ---
@@ -8,6 +8,18 @@ allowed-tools: Bash(sqlite3 *) Bash(mkdir *) Bash(echo *) Bash(test *) Bash(find
 # /synthex:synthex-init -- Scaffold sandbox + init SQLite + report
 
 Resolve SYNTHEX_ROOT from $CLAUDE_PROJECT_DIR, else $PWD. The sandbox lives in the user's project (not the plugin directory).
+
+> **Tool-unavailable guard**: Before any sqlite3 call, this skill checks for sqlite3 presence. If sqlite3 is not available, the skill prints a clear error and exits gracefully rather than failing silently.
+
+## Step 0 -- Verify sqlite3 is available
+
+```bash
+if ! command -v sqlite3 2>/dev/null; then
+  echo "ERROR: sqlite3 is not installed or not in PATH." >&2
+  echo "Install SQLite (https://sqlite.org/download.html) and ensure 'sqlite3' is available." >&2
+  exit 1
+fi
+```
 
 ## Step 1 -- Resolve root
 

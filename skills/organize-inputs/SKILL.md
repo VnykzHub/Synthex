@@ -1,6 +1,6 @@
 ---
 name: organize-inputs
-description: /synthex:organize-inputs — Organize and index files in user-input/. Scans the sandbox, categorizes files by type, generates an index, and validates naming conventions. READ-ONLY — never modifies files.
+description: /synthex:organize-inputs — Organize and index files in user-input/. Scans the sandbox, categorizes files by type, generates an index, and validates naming conventions. READ-ONLY — never modifies files. Use when the user runs /synthex:organize-inputs to scan and catalog files in the user-input/ sandbox.
 disable-model-invocation: true
 ---
 

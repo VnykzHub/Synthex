@@ -1,6 +1,6 @@
 ---
 name: scoring-framework
-description: Weighted multi-dimension scoring system with failure classification and regression protection. Invoked by peer-validator, accuracy-auditor, and risk-identifier whenever they need to produce quantitative scores with defined weights and thresholds.
+description: Weighted multi-dimension scoring system with failure classification and regression protection. Invoked by peer-validator, accuracy-auditor, and risk-identifier whenever they need to produce quantitative scores with defined weights and thresholds. Use when an agent needs weighted quality scoring with failure classification and regression protection.
 ---
 
 # scoring-framework

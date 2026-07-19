@@ -1,0 +1,16 @@
+{
+  "name": "Vnykzhub",
+  "owner": { "name": "Vnykzhub" },
+  "metadata": {
+    "description": "Distribution catalog for the Synthex multi-agent framework plugin."
+  },
+  "plugins": [
+    {
+      "name": "synthex",
+      "source": "./synthex-plugin",
+      "description": "Enterprise multi-agent framework: zero-write sandbox, PI-led agent hierarchy, 3 MCP servers, and a vector Memory Vault.",
+      "version": "0.1.0",
+      "keywords": ["multi-agent", "data-engineering", "research", "memory-vault"]
+    }
+  ]
+}

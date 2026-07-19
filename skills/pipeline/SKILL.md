@@ -1,9 +1,11 @@
 ---
 name: pipeline
-description: "/synthex:pipeline --script=<file> -- Run ETL/ML workloads in the Heavy Compute MCP. Input from user-input/datasets/, output to agent-output/artifacts/."
+description: "/synthex:pipeline --script=<file> -- Run ETL/ML workloads in the Heavy Compute MCP. Input from user-input/datasets/, output to agent-output/artifacts/. Use when the user runs /synthex:pipeline to execute an ETL/ML workload in the Heavy Compute sandbox."
 disable-model-invocation: true
 allowed-tools: Bash(sqlite3 *) Bash(echo *) Bash(test *) Bash(find *) Bash(mkdir *) Bash(python3 *)
 ---
+
+> **⚠ Orchestration entry point:** this skill coordinates multiple agents and tools rather than performing a single atomic task. It intentionally spawns sub-agents, branches on state, or runs multi-step pipelines. See BUILD_PLAN.md Phase 17, Rec 3 for design rationale.
 
 # /synthex:pipeline --script=<file> -- ETL / ML pipeline execution
 

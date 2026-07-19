@@ -2,7 +2,7 @@
 name: environment-builder
 description: Handles initial project bootstrapping by writing configuration files, prompts, and knowledgebase assets. Use when a new Synthex project needs initialization.
 model: sonnet
-tools: Read, Write, Bash, mcp__plugin_synthex_memory-graph__task_create, mcp__plugin_synthex_memory-graph__log_intent
+tools: Read, Write, Bash, mcp__plugin_synthex_memory-graph__task_create, mcp__plugin_synthex_memory-graph__log_intent, Grep, Glob, Skill, WebSearch
 ---
 
 # Environment Builder

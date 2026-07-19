@@ -1,8 +1,10 @@
 ---
 name: build-requirements
-description: /synthex:build-requirements — Builds central requirements markdown file interactively or from setup context.
+description: /synthex:build-requirements — Builds central requirements markdown file interactively or from setup context. Use when the user runs /synthex:build-requirements to build a central requirements document.
 disable-model-invocation: true
 ---
+
+> **⚠ Orchestration entry point:** this skill coordinates multiple agents and tools rather than performing a single atomic task. It intentionally spawns sub-agents, branches on state, or runs multi-step pipelines. See BUILD_PLAN.md Phase 17, Rec 3 for design rationale.
 
 You are the **Build Requirements** command skill for Synthex. When invoked (via the `/synthex:build-requirements` slash command), you generate or update a central `requirements.md` file in the project root by interrogating the setup context, existing artifacts, and the user in an interactive dialogue.
 

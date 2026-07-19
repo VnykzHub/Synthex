@@ -1,6 +1,6 @@
 ---
 name: audit
-description: "/synthex:audit -- Compile logs/state_ledger.db and logs/intents.db into a chronological Markdown audit report with event timeline, task summary, and recent KG triples."
+description: "/synthex:audit -- Compile logs/state_ledger.db and logs/intents.db into a chronological Markdown audit report with event timeline, task summary, and recent KG triples. Use when the user runs /synthex:audit to compile a chronological audit report from the system logs."
 disable-model-invocation: true
 allowed-tools: Bash(sqlite3 *) Bash(echo *) Bash(test *) Bash(mkdir *) Bash(date *) Bash(cat *) Bash(awk *) Bash(printf *) Bash(sed *)
 ---
@@ -32,14 +32,23 @@ OUTPUT_FILE="$SYNTHEX_ROOT/agent-output/reports/audit_${DATE_STAMP}.md"
 
 # Ensure output directory exists
 mkdir -p "$SYNTHEX_ROOT/agent-output/reports"
+# Create portable temp directory (Windows-safe via mktemp)
+TMPDIR=$(mktemp -d) || { echo "FATAL: mktemp failed"; exit 1; }
+trap 'rm -rf "$TMPDIR"' EXIT
+
+# Guard: check sqlite3 is available
+if ! command -v sqlite3 2>/dev/null; then
+  echo "FATAL: sqlite3 not found. Install SQLite or check PATH." >&2
+  exit 1
+fi
 
 # Query state_ledger.db (one invocation, .output redirects to separate temp files)
 sqlite3 "$SYNTHEX_ROOT/logs/state_ledger.db" 2>/dev/null <<SQL
 .separator |
 .headers off
-.output /tmp/synthex_events.txt
+.output "$TMPDIR"/synthex_events.txt
 SELECT id, ts, agent, event_type, details FROM state_ledger ORDER BY ts ASC LIMIT 500;
-.output /tmp/synthex_kg.txt
+.output "$TMPDIR"/synthex_kg.txt
 SELECT subject, predicate, object, source, ts FROM kg_triples ORDER BY ts DESC LIMIT 20;
 SQL
 
@@ -47,9 +56,9 @@ SQL
 sqlite3 "$SYNTHEX_ROOT/logs/intents.db" 2>/dev/null <<SQL
 .separator |
 .headers off
-.output /tmp/synthex_intents.txt
+.output "$TMPDIR"/synthex_intents.txt
 SELECT id, ts, agent, action, why, task_id FROM intents ORDER BY ts ASC LIMIT 500;
-.output /tmp/synthex_tasks.txt
+.output "$TMPDIR"/synthex_tasks.txt
 SELECT id, title, status, assigned_to, created_at, completed_at FROM tasks ORDER BY created_at ASC LIMIT 500;
 SQL
 
@@ -61,22 +70,22 @@ Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)
 ## 1. Event Timeline (state_ledger)
 | # | Timestamp | Agent | Event Type | Details |
 | :-| :-------- | :---- | :--------- | :------ |
-$(awk '{print "| " $0 " |"}' /tmp/synthex_events.txt)
+$(awk '{print "| " $0 " |"}' "$TMPDIR"/synthex_events.txt)
 
 ## 2. Intent Log (intents)
 | # | Timestamp | Agent | Action | Why | Task ID |
 | :-| :-------- | :---- | :----- | :-- | :------ |
-$(awk '{print "| " $0 " |"}' /tmp/synthex_intents.txt)
+$(awk '{print "| " $0 " |"}' "$TMPDIR"/synthex_intents.txt)
 
 ## 3. Task Summary
 | ID | Title | Status | Assigned To | Created | Completed |
 | :- | :---- | :----- | :---------- | :------ | :-------- |
-$(awk '{print "| " $0 " |"}' /tmp/synthex_tasks.txt)
+$(awk '{print "| " $0 " |"}' "$TMPDIR"/synthex_tasks.txt)
 
 ## 4. Recent Knowledge Graph Triples
 | Subject | Predicate | Object | Source | Timestamp |
 | :------ | :-------- | :----- | :----- | :-------- |
-$(awk '{print "| " $0 " |"}' /tmp/synthex_kg.txt)
+$(awk '{print "| " $0 " |"}' "$TMPDIR"/synthex_kg.txt)
 
 ## 5. Report Metadata
 - Source DBs: logs/intents.db, logs/state_ledger.db

@@ -1,6 +1,6 @@
 ---
 name: track-progress
-description: /synthex:track-progress -- Displays pipeline status, phase completions, active tasks, blockers, and validation scores.
+description: /synthex:track-progress -- Displays pipeline status, phase completions, active tasks, blockers, and validation scores. Use when the user runs /synthex:track-progress to display pipeline status, phase completions, and blockers.
 disable-model-invocation: true
 ---
 
@@ -67,15 +67,32 @@ The output ends with a refresh timestamp:
 Last updated: 2026-07-18T16:30:00Z
 ```
 
+## Query Mechanism
+
+Data is read from the SQLite databases using two mechanisms, attempted in order:
+
+**Primary** -- MCP tool `mcp__plugin_synthex_memory-graph__task_list`:
+Returns structured task data directly (id, title, status, assigned_to, created_at). Use this when the MCP server is available.
+
+**Fallback** -- Direct `sqlite3` CLI queries:
+```bash
+sqlite3 -header -column "$SYNTHEX_ROOT/logs/intents.db" \
+  "SELECT id, title, status, assigned_to, created_at
+   FROM tasks
+   ORDER BY created_at DESC;"
+```
+
+Column separators are enabled via `-column` and `-header` flags so the output renders as a table.
+
+For `state_ledger` queries:
+```bash
+sqlite3 -header -column "$SYNTHEX_ROOT/logs/state_ledger.db" \
+  "SELECT event_type, details, timestamp
+   FROM state_ledger
+   WHERE event_type LIKE 'pipeline.phase.%'
+   ORDER BY timestamp DESC;"
+```
+
 ## Data Sources
-
-| Section             | Source Table             | Filter                              |
-|---------------------|--------------------------|-------------------------------------|
-| Phase Summary       | state_ledger             | event_type LIKE 'pipeline.phase.%'  |
-| Active Tasks        | intents.tasks            | status IN ('in-progress','blocked') |
-| Blockers            | intents.tasks            | status = 'blocked'                  |
-| Validation Scores   | state_ledger             | event_type = 'pipeline.validate'    |
-
-## Output Format
 
 Plain text, one line per data point. Each section header is on its own line followed by indented detail lines. Total output should be kept under 80 lines -- aggregate where counts are high rather than listing every item.

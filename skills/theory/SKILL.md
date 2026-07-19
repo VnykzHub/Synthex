@@ -1,6 +1,6 @@
 ---
 name: theory
-description: "/synthex:theory -- Launch Methodologist to inspect user-input/ for LaTeX proofs, complexity analysis, or asymptotic bounds. Verify via heavy-compute sympy_solve."
+description: "/synthex:theory -- Launch Methodologist to inspect user-input/ for LaTeX proofs, complexity analysis, or asymptotic bounds. Verify via heavy-compute sympy_solve. Use when the user runs /synthex:theory to launch formal mathematical analysis."
 disable-model-invocation: true
 allowed-tools: Bash(sqlite3 *) Bash(echo *) Bash(find *) Bash(grep *) Bash(cat *) Bash(mkdir *)
 ---
@@ -35,9 +35,11 @@ If $ARGUMENTS specifies a particular file or topic, focus the search on that.
 - If the material contains mathematical notation, extract the key expressions.
 - If the material describes an algorithm, identify the asymptotic bound claimed.
 
-## Step 4 -- Verify with heavy-compute MCP
+## Step 4 -- Verify with heavy-compute MCP (with fallback)
 
-For each extractable expression or bound, call the heavy-compute MCP:
+> **Tool-unavailable fallback**: If the heavy-compute MCP (`sympy_solve`, `profile_script`) is unavailable, fall back to manual derivation. Document each step of the derivation in `agent-output/reports/theory_analysis.md` under a "Manual Derivation" section, noting that the computation was performed by hand rather than verified symbolically. For simple expressions, use `python3 -c "import sympy; ..."` if sympy is installed locally; otherwise compute analytically and state the assumptions.
+
+For each extractable expression or bound, call the heavy-compute MCP when available:
 
 - `mcp__plugin_synthex_heavy-compute__sympy_solve(expression="<extracted>", kind="auto")`
   - For limits, summations, recurrences, integrals, or equation solving

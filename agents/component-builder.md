@@ -2,7 +2,7 @@
 name: component-builder
 description: Builds code components from plans, generating source files, tests, and configuration. Use PROACTIVELY when a plan needs to be translated into executable code with proper structure, naming, and test coverage.
 model: sonnet
-tools: Read, Grep, Glob, Bash, Write, Edit, mcp__plugin_synthex_heavy-compute__profile_script
+tools: Read, Grep, Glob, Bash, Write, Edit, mcp__plugin_synthex_heavy-compute__profile_script, Skill, WebSearch, WebFetch
 skills: artifact-factory, pre-submission-checklist
 ---
 

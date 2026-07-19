@@ -2,7 +2,7 @@
 name: quality-automation
 description: Generates validation, refinement, and regression automation scripts that enforce structural and behavioral quality gates across the Synthex pipeline. Use PROACTIVELY when automation scripts are needed to enforce quality at scale.
 model: sonnet
-tools: Read, Write, Bash
+tools: Read, Write, Bash, Grep, Glob, Skill, WebFetch, mcp__plugin_synthex_memory-graph__task_create, mcp__plugin_synthex_memory-graph__log_intent
 skills: structure-validator
 ---
 
