@@ -4,9 +4,11 @@
 
 ```bash
 git clone https://github.com/VnykzHub/Synthex.git
-cd Synthex/synthex-plugin
+cd Synthex
 claude --plugin-dir .
 ```
+
+> The repo root IS the plugin directory. Cloning gives you the plugin directly.
 
 ## From GitHub (direct)
 

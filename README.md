@@ -1,6 +1,6 @@
 # Synthex v2.0.0
 
-Enterprise-grade multi-agent operating framework for Claude Code — pipeline orchestration, continuous research loop, 23 specialist agents, 41 skills, 22 commands, three MCP servers, a 4-tier vector Memory Vault, zero-write sandbox, and always-on audit daemon. No analytical trail is ever lost.
+Enterprise-grade multi-agent operating framework for Claude Code — pipeline orchestration, continuous research loop, 24 specialist agents, 41 skills, 22 commands, three MCP servers, a 4-tier vector Memory Vault, zero-write sandbox, and always-on audit daemon. No analytical trail is ever lost.
 
 ---
 
@@ -12,7 +12,7 @@ Claude Code is powerful but stateless: past decisions, mid-session reasoning, an
 |---|---|
 | Agents forget past decisions within 3 turns | Memory Vault (turbovec→chroma→numpy→pure-cosine) auto-injects relevant context before every task |
 | No enforcement of where agents read/write | Zero-write sandbox — agents can't touch your source unless you place it in `user-input/` |
-| Manual coordination of multi-agent work | Pipeline Director orchestrates 5-phase execution (Research→Planning→Implementation→Review→Validation) with 23 specialist agents |
+| Manual coordination of multi-agent work | Pipeline Director orchestrates 5-phase execution (Research→Planning→Implementation→Review→Validation) with 24 specialist agents |
 | No audit trail for decisions | Every tool call, subagent lifecycle, and task decision is logged to SQLite |
 | No persistent semantic search | `vector_retrieve` finds relevant past work by meaning, not filename |
 | One-off experiments with no iteration | Continuous research loop: literature→hypothesis→experiment→reflect→iterate, with autonomous mode |
@@ -127,7 +127,7 @@ For multi-phase work, use the pipeline:
 
 ## The agent hierarchy
 
-Synthex organizes 23 specialist subagents across 7 divisions under the Principal Investigator.
+Synthex organizes 24 specialist subagents across 7 divisions under the Principal Investigator.
 
 ```
                          ┌─────────────────────────┐

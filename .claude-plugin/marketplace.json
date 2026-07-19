@@ -1,16 +1,16 @@
 {
-  "name": "Vnykzhub",
-  "owner": { "name": "Vnykzhub" },
+  "name": "vnykzhub-marketplace",
+  "owner": { "name": "VnykzHub" },
   "metadata": {
     "description": "Distribution catalog for the Synthex multi-agent framework plugin."
   },
   "plugins": [
     {
       "name": "synthex",
-      "source": "./synthex-plugin",
-      "description": "Enterprise multi-agent framework: zero-write sandbox, PI-led agent hierarchy, 3 MCP servers, and a vector Memory Vault.",
-      "version": "0.1.0",
-      "keywords": ["multi-agent", "data-engineering", "research", "memory-vault"]
+      "source": ".",
+      "description": "Enterprise-grade multi-agent framework with pipeline orchestration and continuous research loop. 24 agents, 41 skills, 3 MCP servers, 4-tier vector Memory Vault, zero-write sandbox, always-on audit daemon.",
+      "version": "2.0.0",
+      "keywords": ["multi-agent", "data-engineering", "research", "memory-vault", "pipeline-orchestration", "experiment-loop"]
     }
   ]
 }
