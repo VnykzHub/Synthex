@@ -42,7 +42,7 @@ def _parse_fm(path: Path) -> tuple[dict[str, str], list[str]]:
 
 
 VALID_AGENT = {"name", "description", "model", "tools", "skills"}
-VALID_SKILL = {"name", "description", "disable-model-invocation", "allowed-tools", "superseded_by", "role"}
+VALID_SKILL = {"name", "description", "disable-model-invocation", "allowed-tools", "superseded_by", "role", "related_skills"}
 CMD_SKILLS = {"synthex-init", "delegate", "theory", "pipeline", "report",
               "experiment", "status", "audit", "memory"}
 DOMAIN_SKILLS = {"task-tracking", "knowledge-graph", "data-lineage",

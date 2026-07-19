@@ -1,9 +1,10 @@
 ---
 name: experiment
-description: "/synthex:experiment -- Full experiment lifecycle: design, run, compare, report. Launch Research Scientist with experiment-design skill, heavy-compute MCP, and Documentation Engineer. Use when the user runs /synthex:experiment to run the full experiment lifecycle from design through reporting."
+description: "/synthex:experiment — Full experiment lifecycle: design, run, compare, report. Use when running /synthex:experiment."
 role: orchestrator
 disable-model-invocation: true
 allowed-tools: Bash(sqlite3 *) Bash(echo *) Bash(find *) Bash(mkdir *) Bash(test *) Bash(python3 *)
+related_skills: [research-loop, experiment-auditor, pipeline, report]
 ---
 
 > **⚠ Orchestration entry point:** this skill coordinates multiple agents and tools rather than performing a single atomic task. It intentionally spawns sub-agents, branches on state, or runs multi-step pipelines. See BUILD_PLAN.md Phase 17, Rec 3 for design rationale.

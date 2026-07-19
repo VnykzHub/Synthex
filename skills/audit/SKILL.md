@@ -1,8 +1,9 @@
 ---
 name: audit
-description: "/synthex:audit -- Compile logs/state_ledger.db and logs/intents.db into a chronological Markdown audit report with event timeline, task summary, and recent KG triples. Use when the user runs /synthex:audit to compile a chronological audit report from the system logs."
+description: "/synthex:audit -- Compile system logs into a Markdown report. Use when running /synthex:audit."
 role: worker
 disable-model-invocation: true
+related_skills: [experiment-auditor, knowledge-graph, task-tracking, report]
 allowed-tools: Bash(sqlite3 *) Bash(echo *) Bash(test *) Bash(mkdir *) Bash(date *) Bash(cat *) Bash(awk *) Bash(printf *) Bash(sed *)
 ---
 
@@ -87,6 +88,11 @@ $(awk '{print "| " $0 " |"}' "$TMPDIR"/synthex_tasks.txt)
 | Subject | Predicate | Object | Source | Timestamp |
 | :------ | :-------- | :----- | :----- | :-------- |
 $(awk '{print "| " $0 " |"}' "$TMPDIR"/synthex_kg.txt)
+
+## Compact Mode
+When invoked with `--compact` or when the calling agent already knows the methodology:
+skip the "Core principles" and background sections. Use only the checklist, specific instructions, and output format.
+Token budget in compact mode: ~500 tokens.
 
 ## Error Recovery
 

@@ -1,8 +1,9 @@
 ---
 name: add-component
-description: /synthex:add-component — Scaffold a new component from a template. Adds a new code module, configuration, and test files under agent-output/src/ following project conventions. Use when the user runs /synthex:add-component to scaffold a new component from a template.
+description: "/synthex:add-component — Scaffold a component from a template. Use when running /synthex:add-component."
 role: command
 disable-model-invocation: true
+related_skills: [artifact-factory, structure-validator, refine-component]
 ---
 
 # add-component (command: `/synthex:add-component`)

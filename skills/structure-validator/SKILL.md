@@ -1,7 +1,8 @@
 ---
 name: structure-validator
-description: Python validation patterns for folder boundaries, YAML structures, naming conventions, and file existence. Invoked by quality-automation and artifact-verifier for generating validation logic and by any agent that needs structural validation of artifacts. Use when validating folder boundaries, YAML structures, naming conventions, or file existence against a project schema.
+description: Validation for folder boundaries, YAML structure, naming, file existence. Use when validating structural requirements.
 role: worker
+related_skills: [artifact-factory, preflight, registry-manager, enable-validation]
 ---
 
 # structure-validator

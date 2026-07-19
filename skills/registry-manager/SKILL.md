@@ -1,7 +1,8 @@
 ---
 name: registry-manager
-description: Defines patterns for reading, updating, and diffing the component registry to support incremental pipeline runs. Use when tracking component state across pipeline phases.
+description: Read, update, and diff the component registry for incremental runs. Use when tracking component state across phases.
 role: command
+related_skills: [registry-view, track-progress, task-tracking]
 ---
 
 # Registry Manager

@@ -1,7 +1,8 @@
 ---
 name: research-loop
-description: Implements the continuous research loop — hypothesis→experiment→reflect→iterate — with hypothesis tree tracking and Memory Vault integration. Extends experiment-design with iterative capabilities. Use when research questions need systematic exploration across multiple experiments.
+description: "Continuous research loop: hypothesize, experiment, reflect, iterate. Use when exploring across experiments."
 role: worker
+related_skills: [experiment-auditor, reproducibility-checker, literature-survey, scoring-framework]
 ---
 
 > **⚠ Orchestration entry point:** this skill coordinates multiple agents and tools rather than performing a single atomic task. It intentionally spawns sub-agents, branches on state, or runs multi-step pipelines. See BUILD_PLAN.md Phase 17, Rec 3 for design rationale.
@@ -111,6 +112,11 @@ hypothesis_tree:
 - **After each phase**: Call `mcp__plugin_synthex_memory-graph__log_intent` to record progress.
 - **Hypothesis tree updates**: Call `mcp__plugin_synthex_memory-graph__kg_add` to link hypothesis nodes to experiment artifacts and metric outcomes.
 - **Reflection persistence**: Store full reflection text in the Memory Vault with the hypothesis ID as primary key and the iteration number as version.
+
+## Compact Mode
+When invoked with `--compact` or when the calling agent already knows the methodology:
+skip the "Core principles" and background sections. Use only the checklist, specific instructions, and output format.
+Token budget in compact mode: ~500 tokens.
 
 ## Preconditions
 

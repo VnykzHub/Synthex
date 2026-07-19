@@ -1,9 +1,10 @@
 ---
 name: synthex-init
-description: "/synthex:synthex-init -- Scaffold the runtime sandbox directories, create SQLite databases with full schema, and mark init complete. Call once at project setup. Use when the user runs /synthex:synthex-init to scaffold the runtime sandbox at project start."
+description: "/synthex:synthex-init — Scaffold sandbox and create SQLite databases. Use when running /synthex:synthex-init."
 role: command
 disable-model-invocation: true
 allowed-tools: Bash(sqlite3 *) Bash(mkdir *) Bash(echo *) Bash(test *) Bash(find *)
+related_skills: [init-project, preflight, launch-pipeline]
 ---
 
 # /synthex:synthex-init -- Scaffold sandbox + init SQLite + report

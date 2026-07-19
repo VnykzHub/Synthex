@@ -1,8 +1,9 @@
 ---
 name: refine-component
-description: /synthex:refine-component — Refine an existing component by applying structural fixes, naming corrections, and convention alignment. Non-destructive by default — uses patch files. Use when the user runs /synthex:refine-component to apply structural fixes to a locked component.
+description: "/synthex:refine-component — Apply structural fixes, naming corrections. Use when running /synthex:refine-component."
 role: command
 disable-model-invocation: true
+related_skills: [structure-validator, artifact-factory, registry-manager]
 ---
 
 # refine-component (command: `/synthex:refine-component`)

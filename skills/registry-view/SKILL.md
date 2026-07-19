@@ -1,8 +1,9 @@
 ---
 name: registry-view
-description: /synthex:registry-view -- Displays current manifest state showing locked, in-progress, draft, and queued components. Use when the user runs /synthex:registry-view to display the current component manifest state.
+description: "/synthex:registry-view — Display manifest state of all components. Use when running /synthex:registry-view."
 role: gate
 disable-model-invocation: true
+related_skills: [registry-manager, track-progress, status]
 ---
 
 # Registry View

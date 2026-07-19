@@ -1,8 +1,9 @@
 ---
 name: enable-validation
-description: /synthex:enable-validation — Enable validation scripts for a component or the entire pipeline. Generates or links CI-ready validation scripts under agent-output/scripts/. Use when the user runs /synthex:enable-validation to generate post-pipeline validation scripts.
+description: "/synthex:enable-validation — Generate CI-ready validation scripts. Use when running /synthex:enable-validation."
 role: gate
 disable-model-invocation: true
+related_skills: [structure-validator, preflight, registry-manager]
 ---
 
 > **⚠ Orchestration entry point:** this skill coordinates multiple agents and tools rather than performing a single atomic task. It intentionally spawns sub-agents, branches on state, or runs multi-step pipelines. See BUILD_PLAN.md Phase 17, Rec 3 for design rationale.

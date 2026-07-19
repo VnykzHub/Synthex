@@ -1,8 +1,9 @@
 ---
 name: track-progress
-description: /synthex:track-progress -- Displays pipeline status, phase completions, active tasks, blockers, and validation scores. Use when the user runs /synthex:track-progress to display pipeline status, phase completions, and blockers.
+description: "/synthex:track-progress — Show pipeline phases, completions, and blockers. Use when running /synthex:track-progress."
 role: gate
 disable-model-invocation: true
+related_skills: [status, task-tracking, registry-view]
 ---
 
 # Track Progress

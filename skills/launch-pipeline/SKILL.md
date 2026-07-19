@@ -1,8 +1,9 @@
 ---
 name: launch-pipeline
-description: /synthex:launch-pipeline — Main entry point that checks readiness, gathers missing context, and hands off to the PipelineDirector for execution. Use when the user runs /synthex:launch-pipeline to execute the full 5-phase project pipeline.
+description: "/synthex:launch-pipeline — Check readiness, hand off to PipelineDirector. Use when running /synthex:launch-pipeline."
 role: orchestrator
 disable-model-invocation: true
+related_skills: [preflight, init-project, pipeline, task-orchestrator]
 ---
 
 > **⚠ Orchestration entry point:** this skill coordinates multiple agents and tools rather than performing a single atomic task. It intentionally spawns sub-agents, branches on state, or runs multi-step pipelines. See BUILD_PLAN.md Phase 17, Rec 3 for design rationale.

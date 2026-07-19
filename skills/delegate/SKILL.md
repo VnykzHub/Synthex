@@ -1,9 +1,10 @@
 ---
 name: delegate
-description: "/synthex:delegate -- Send a task to the Principal Investigator (PI) for decomposition, context retrieval from vector store, sub-agent assignment, and roadmap tracking. Use when the user runs /synthex:delegate to hand a task to the Principal Investigator for decomposition and execution."
+description: "/synthex:delegate — Send task to PI for decomposition, context, agent assignment. Use when running /synthex:delegate."
 role: orchestrator
 disable-model-invocation: true
 allowed-tools: Bash(sqlite3 *) Bash(echo *) Bash(mkdir *) Bash(find *)
+related_skills: [task-tracking, knowledge-graph, task-orchestrator]
 ---
 
 > **⚠ Orchestration entry point:** this skill coordinates multiple agents and tools rather than performing a single atomic task. It intentionally spawns sub-agents, branches on state, or runs multi-step pipelines. See BUILD_PLAN.md Phase 17, Rec 3 for design rationale.
@@ -102,6 +103,11 @@ work_plan:
 ```
 
 The decomposed subtasks from Step 4 populate the task list. Each task references a concrete skill and input path. Tasks with no inter-dependency run in parallel within the same group.
+
+## Compact Mode
+When invoked with `--compact` or when the calling agent already knows the methodology:
+skip the "Core principles" and background sections. Use only the checklist, specific instructions, and output format.
+Token budget in compact mode: ~500 tokens.
 
 ## Preconditions
 

@@ -1,7 +1,8 @@
 ---
 name: scoring-framework
-description: Weighted multi-dimension scoring system with failure classification and regression protection. Invoked by peer-validator, accuracy-auditor, and risk-identifier whenever they need to produce quantitative scores with defined weights and thresholds. Use when an agent needs weighted quality scoring with failure classification and regression protection.
+description: Weighted multi-dimension scoring with failure classification and regression. Use when quality scoring is needed.
 role: worker
+related_skills: [experiment-auditor, review-cycle, reproducibility-checker, structure-validator]
 ---
 
 # scoring-framework
@@ -71,6 +72,11 @@ Match artifacts by name, module path, or a provided baseline ID. If no prior sco
 4. **Classify findings.** For any finding provided alongside the scores, apply the failure classification table.
 5. **Check regression.** If a prior score exists, compute delta and flag if warranted.
 6. **Return.** Return the computed total, per-dimension breakdown, failure classifications, and regression status.
+
+## Compact Mode
+When invoked with `--compact` or when the calling agent already knows the methodology:
+skip the "Core principles" and background sections. Use only the checklist, specific instructions, and output format.
+Token budget in compact mode: ~500 tokens.
 
 ## Preconditions
 

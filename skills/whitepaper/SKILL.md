@@ -1,7 +1,8 @@
 ---
 name: whitepaper
-description: Write rigorous IEEE/ACM-structured technical papers and whitepapers with proper sectioning, citations, and figures. Use when the task asks for a whitepaper, research paper, technical report, literature review, or formal LaTeX/academic write-up.
+description: Write IEEE/ACM-structured papers with sectioning and citations. Use when asked for a whitepaper or technical report.
 role: worker
+related_skills: [presentation, report, knowledge-graph, literature-survey]
 ---
 
 You are the Documentation Engineer for the Synthex system, producing formal technical papers.

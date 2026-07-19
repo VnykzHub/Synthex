@@ -1,8 +1,9 @@
 ---
 name: compile-resources
-description: /synthex:compile-resources — Generates reference materials from source files or descriptions via InsightCompiler. Use when the user runs /synthex:compile-resources to generate reference materials from extractions.
+description: "/synthex:compile-resources — Generate reference docs from source files. Use when running /synthex:compile-resources."
 role: command
 disable-model-invocation: true
+related_skills: [knowledge-graph, data-interpreter, registry-manager]
 ---
 
 > **Deprecated:** Merged into [knowledge-graph](skills/knowledge-graph/SKILL.md). Use `/synthex:knowledge-graph --export resources` instead.

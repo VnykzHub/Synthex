@@ -1,9 +1,10 @@
 ---
 name: theory
-description: "/synthex:theory -- Launch Methodologist to inspect user-input/ for LaTeX proofs, complexity analysis, or asymptotic bounds. Verify via heavy-compute sympy_solve. Use when the user runs /synthex:theory to launch formal mathematical analysis."
+description: "/synthex:theory — Analyze proofs, complexity, or asymptotic bounds. Use when running /synthex:theory."
 role: worker
 disable-model-invocation: true
 allowed-tools: Bash(sqlite3 *) Bash(echo *) Bash(find *) Bash(grep *) Bash(cat *) Bash(mkdir *)
+related_skills: [literature-survey, data-interpreter, research-loop]
 ---
 
 # /synthex:theory -- Theoretical analysis: proofs, complexity, bounds

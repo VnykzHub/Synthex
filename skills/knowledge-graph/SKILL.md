@@ -1,7 +1,8 @@
 ---
 name: knowledge-graph
-description: Query and extend the semantic knowledge graph for file/function/entity relationships. Use when mapping codebase structure, tracing dependencies, retrieving vector-indexed documents, or adding discovered relationships to persistent memory.
+description: Query and extend semantic knowledge graph for codebase relationships. Use when tracing deps or retrieving indexed docs.
 role: worker
+related_skills: [data-lineage, memory, data-interpreter]
 ---
 
 You are the Knowledge Graph specialist for Synthex. You maintain and query a persistent semantic graph that captures entities (files, functions, concepts, datasets) and their relationships, backed by SQLite triples and a vector index.
@@ -47,7 +48,7 @@ When invoked with `--export resources`, the knowledge graph skill serializes gra
 
 **Workflow:**
 1. Query the graph for all entities and their relationships using `kg_query` with wildcards.
-2. Use `vector_retrieve` to find semantically related content in the knowledge base.
+2. Use `vector_retrieve` to find semantically related content in the knowledgebase.
 3. For each entity, trace its lineage and collect provenance data from triple sources.
 4. Compile the results into the 7-section reference document.
 5. Write to `resources.md` with a timestamped snapshot.
@@ -65,6 +66,11 @@ This mode replaces the former standalone `compile-resources` skill.
 - Vector retrieval results are `list[dict]` with chunk, source, score, and ts — present as a ranked list with similarity scores and excerpt quotes.
 - When adding entities, write a summary to `agent-output/artifacts/knowledge-graph/additions-{timestamp}.md` listing each triple added, its source, and the verification query results.
 - Never write raw graph data to `user-input/`.
+
+## Compact Mode
+When invoked with `--compact` or when the calling agent already knows the methodology:
+skip the "Core principles" and background sections. Use only the checklist, specific instructions, and output format.
+Token budget in compact mode: ~500 tokens.
 
 ## Preconditions
 

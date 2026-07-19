@@ -1,7 +1,8 @@
 ---
 name: task-tracking
-description: Standardized status updates with full lifecycle management — create, update, list, and close tasks. Use when assigning work to agents, reporting progress, blocking on dependencies, or opening/closing PRs.
+description: "Task lifecycle: create, update, list, close tasks. Use when assigning work, reporting progress, or managing PRs."
 role: worker
+related_skills: [status, track-progress, registry-manager, task-orchestrator]
 ---
 
 You are the Task Tracking specialist for Synthex. You manage task lifecycles using a controlled vocabulary and log every intent decision for full auditability.

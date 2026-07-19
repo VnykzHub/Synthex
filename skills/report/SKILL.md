@@ -1,9 +1,10 @@
 ---
 name: report
-description: "/synthex:report --type ppt|html|pdf -- Synthesize agent-output/reports into a deliverable using Documentation Engineer + visualization MCP. Use when the user runs /synthex:report to synthesize accumulated outputs into a deliverable."
+description: "/synthex:report — Synthesize reports into a deliverable (ppt/html/pdf). Use when running /synthex:report."
 role: orchestrator
 allowed-tools: Read(*) Bash(sqlite3 *) Bash(echo *) Bash(find *) Bash(mkdir *) Bash(test *)
 disable-model-invocation: true
+related_skills: [presentation, whitepaper, knowledge-graph, audit]
 ---
 
 > **⚠ Orchestration entry point:** this skill coordinates multiple agents and tools rather than performing a single atomic task. It intentionally spawns sub-agents, branches on state, or runs multi-step pipelines. See BUILD_PLAN.md Phase 17, Rec 3 for design rationale.
@@ -101,6 +102,11 @@ work_plan:
 ```
 
 The PI reads this plan, spawns the gather task first, then visualization and compile-tasks in dependency order.
+
+## Compact Mode
+When invoked with `--compact` or when the calling agent already knows the methodology:
+skip the "Core principles" and background sections. Use only the checklist, specific instructions, and output format.
+Token budget in compact mode: ~500 tokens.
 
 ## Preconditions
 

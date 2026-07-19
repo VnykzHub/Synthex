@@ -1,7 +1,8 @@
 ---
 name: review-cycle
-description: Contains task generation templates for the review, scoring, and automatic re-score loop phases. Use when artifacts need peer review and quality scoring.
+description: Task templates for review, scoring, and re-score loop phases. Use when artifacts need peer review and scoring.
 role: worker
+related_skills: [scoring-framework, structure-validator, task-orchestrator, audit]
 ---
 
 # Review Cycle Skill

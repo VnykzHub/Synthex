@@ -1,9 +1,10 @@
 ---
 name: pipeline
-description: "/synthex:pipeline --script=<file> -- Run ETL/ML workloads in the Heavy Compute MCP. Input from user-input/datasets/, output to agent-output/artifacts/. Use when the user runs /synthex:pipeline to execute an ETL/ML workload in the Heavy Compute sandbox."
+description: "/synthex:pipeline — Run ETL/ML workloads in Heavy Compute MCP. Use when running /synthex:pipeline."
 role: worker
 disable-model-invocation: true
 allowed-tools: Bash(sqlite3 *) Bash(echo *) Bash(test *) Bash(find *) Bash(mkdir *) Bash(python3 *)
+related_skills: [data-lineage, task-tracking, knowledge-graph]
 ---
 
 > **⚠ Orchestration entry point:** this skill coordinates multiple agents and tools rather than performing a single atomic task. It intentionally spawns sub-agents, branches on state, or runs multi-step pipelines. See BUILD_PLAN.md Phase 17, Rec 3 for design rationale.
@@ -79,6 +80,11 @@ else
   fi
 fi
 ```
+
+## Compact Mode
+When invoked with `--compact` or when the calling agent already knows the methodology:
+skip the "Core principles" and background sections. Use only the checklist, specific instructions, and output format.
+Token budget in compact mode: ~500 tokens.
 
 ## Preconditions
 

@@ -1,8 +1,9 @@
 ---
 name: preflight
-description: /synthex:preflight — Read-only dry-run validation that reports what's ready and what's missing before pipeline execution. Use when the user runs /synthex:preflight for a read-only dry-run validation before pipeline execution.
+description: "/synthex:preflight — Read-only dry-run of pipeline readiness. Use when running /synthex:preflight."
 role: gate
 disable-model-invocation: true
+related_skills: [structure-validator, registry-manager, launch-pipeline]
 ---
 
 # Preflight Skill
