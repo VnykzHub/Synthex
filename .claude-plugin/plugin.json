@@ -20,5 +20,14 @@
     "synthex:compile-resources": "synthex:knowledge-graph --export resources",
     "synthex:organize-inputs": "synthex:preflight --organize",
     "synthex:pre-submission-checklist": "synthex:artifact-factory --validate"
+  },
+  "orchestration": {
+    "sole_orchestrator": "principal-investigator",
+    "max_parallel_agents": 8,
+    "worker_skills_cannot_spawn": true,
+    "orchestrator_skills": [
+      "delegate", "launch-pipeline", "init-project",
+      "pipeline", "report", "research-loop-cmd"
+    ]
   }
 }

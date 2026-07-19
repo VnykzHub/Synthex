@@ -1,6 +1,7 @@
 ---
 name: experiment
 description: "/synthex:experiment -- Full experiment lifecycle: design, run, compare, report. Launch Research Scientist with experiment-design skill, heavy-compute MCP, and Documentation Engineer. Use when the user runs /synthex:experiment to run the full experiment lifecycle from design through reporting."
+role: orchestrator
 disable-model-invocation: true
 allowed-tools: Bash(sqlite3 *) Bash(echo *) Bash(find *) Bash(mkdir *) Bash(test *) Bash(python3 *)
 ---
@@ -111,6 +112,38 @@ Synthesize everything into a final report. Launch the documentation-engineer (vi
 - Optionally generate visualizations using the visualization MCP:
   - `mcp__plugin_synthex_visualization__threejs_scaffold(name="exp-<name>-chart", kind="scene")`
   - `mcp__plugin_synthex_visualization__react_component(name="exp-<name>-viz", spec="<spec>")`
+
+## Output Format — Work Plan
+
+Instead of directly running experiment phases, this skill **emits a structured work-plan YAML** that the PI agent reads and executes. The PI is the sole entity that spawns agents from this plan.
+
+```yaml
+work_plan:
+  tasks:
+    - id: "experiment-design"
+      skill: "research-loop"
+      input: "$ARGUMENTS"
+      depends_on: []
+    - id: "experiment-run"
+      skill: "pipeline"
+      input: "agent-output/reports/experiment-<name>/design.md"
+      depends_on: ["experiment-design"]
+    - id: "experiment-compare"
+      skill: "data-interpreter"
+      input: "agent-output/reports/experiment-<name>/results.md"
+      depends_on: ["experiment-run"]
+    - id: "experiment-report"
+      skill: "report"
+      input: "agent-output/reports/experiment-<name>/"
+      depends_on: ["experiment-compare"]
+  parallel_groups:
+    - ["experiment-design"]
+    - ["experiment-run"]
+    - ["experiment-compare"]
+    - ["experiment-report"]
+```
+
+Each phase runs sequentially. The PI reads this plan and spawns agents in dependency order.
 
 ## Error Recovery
 

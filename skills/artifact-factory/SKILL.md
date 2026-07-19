@@ -1,6 +1,7 @@
 ---
 name: artifact-factory
 description: Generator patterns for producing YAML configurations, Markdown documents, Python code modules, and test suites. Invoked by component-builder, peer-validator, and accuracy-auditor when they need to produce structured artifacts from templates. Use when generating structured artifacts (YAML, Markdown, code modules, test suites) from templates.
+role: worker
 ---
 
 # artifact-factory

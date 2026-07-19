@@ -1,6 +1,7 @@
 ---
 name: report
 description: "/synthex:report --type ppt|html|pdf -- Synthesize agent-output/reports into a deliverable using Documentation Engineer + visualization MCP. Use when the user runs /synthex:report to synthesize accumulated outputs into a deliverable."
+role: orchestrator
 allowed-tools: Read(*) Bash(sqlite3 *) Bash(echo *) Bash(find *) Bash(mkdir *) Bash(test *)
 disable-model-invocation: true
 ---
@@ -73,6 +74,33 @@ Render via one of these pipelines:
 - Include any generated visualizations as figures.
 
 Write to `agent-output/reports/report-<topic>.pdf`.
+
+## Output Format — Work Plan
+
+Instead of directly synthesizing the report, this skill **emits a structured work-plan YAML** that the PI agent reads and executes. The PI is the sole entity that spawns agents from this plan.
+
+```yaml
+work_plan:
+  tasks:
+    - id: "report-gather-sources"
+      skill: "data-interpreter"
+      input: "agent-output/reports/"
+      depends_on: []
+    - id: "report-generate-visualizations"
+      skill: "presentation"
+      input: "agent-output/artifacts/"
+      depends_on: ["report-gather-sources"]
+    - id: "report-compile-output"
+      skill: "whitepaper"
+      input: "<topic>"
+      depends_on: ["report-gather-sources", "report-generate-visualizations"]
+  parallel_groups:
+    - ["report-gather-sources"]
+    - ["report-generate-visualizations"]
+    - ["report-compile-output"]
+```
+
+The PI reads this plan, spawns the gather task first, then visualization and compile-tasks in dependency order.
 
 ## Preconditions
 

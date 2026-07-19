@@ -1,6 +1,7 @@
 ---
 name: build-requirements
 description: /synthex:build-requirements — Builds central requirements markdown file interactively or from setup context. Use when the user runs /synthex:build-requirements to build a central requirements document.
+role: gate
 disable-model-invocation: true
 ---
 

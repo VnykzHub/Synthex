@@ -1,6 +1,7 @@
 ---
 name: research-loop-cmd
 description: /synthex:research-loop "<question>" [--autonomous] [--max-iterations N] — Starts the continuous research loop with optional autonomous mode. Use when the user runs /synthex:research-loop to start the continuous research cycle.
+role: orchestrator
 disable-model-invocation: true
 ---
 
@@ -39,6 +40,33 @@ You are the **Research Loop Command** handler for Synthex. You parse the `/synth
 5. **Log the command invocation** via `log_intent(agent="research-loop-cmd", action="loop.started", context="<question[:60]>")`.
 6. **If autonomous**: delegate to the research loop engine and report results when the loop concludes.
 7. **If non-autonomous**: run one iteration, present the results and Reflection Decision, then wait for user confirmation to proceed to the next iteration.
+
+## Output Format — Work Plan
+
+Instead of directly initializing the research loop, this skill **emits a structured work-plan YAML** that the PI agent reads and executes. The PI is the sole entity that spawns agents from this plan.
+
+```yaml
+work_plan:
+  tasks:
+    - id: "loop-init"
+      skill: "research-loop"
+      input: "$ARGUMENTS"
+      depends_on: []
+    - id: "loop-retrieve-context"
+      skill: "memory"
+      input: "$ARGUMENTS"
+      depends_on: ["loop-init"]
+    - id: "loop-iterate"
+      skill: "research-loop"
+      input: "agent-output/artifacts/hypothesis-tree.yaml"
+      depends_on: ["loop-retrieve-context"]
+  parallel_groups:
+    - ["loop-init"]
+    - ["loop-retrieve-context"]
+    - ["loop-iterate"]
+```
+
+The PI reads this plan, spawns the init task first, then context retrieval, then iteration.
 
 ## Error Recovery
 

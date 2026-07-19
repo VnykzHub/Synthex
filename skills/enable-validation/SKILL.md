@@ -1,6 +1,7 @@
 ---
 name: enable-validation
 description: /synthex:enable-validation — Enable validation scripts for a component or the entire pipeline. Generates or links CI-ready validation scripts under agent-output/scripts/. Use when the user runs /synthex:enable-validation to generate post-pipeline validation scripts.
+role: gate
 disable-model-invocation: true
 ---
 

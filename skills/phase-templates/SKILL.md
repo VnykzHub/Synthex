@@ -1,6 +1,7 @@
 ---
 name: phase-templates
 description: Contains task generation templates for the research, planning, and implementation phases. Use when PipelineDirector needs to generate standard tasks for a new project phase.
+role: worker
 ---
 
 # Phase Templates Skill

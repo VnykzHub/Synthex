@@ -1,6 +1,7 @@
 ---
 name: pre-submission-checklist
 description: Mandatory 4-step quality gate for all deliverables. Invoked by component-builder before writing any output to agent-output/src/. Every step must pass before the artifact can proceed. Use when an agent needs to run the mandatory 4-step pre-submission gate before artifact delivery.
+role: gate
 ---
 
 # pre-submission-checklist

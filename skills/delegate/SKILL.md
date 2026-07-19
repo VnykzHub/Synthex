@@ -1,6 +1,7 @@
 ---
 name: delegate
 description: "/synthex:delegate -- Send a task to the Principal Investigator (PI) for decomposition, context retrieval from vector store, sub-agent assignment, and roadmap tracking. Use when the user runs /synthex:delegate to hand a task to the Principal Investigator for decomposition and execution."
+role: orchestrator
 disable-model-invocation: true
 allowed-tools: Bash(sqlite3 *) Bash(echo *) Bash(mkdir *) Bash(find *)
 ---
@@ -72,6 +73,35 @@ Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)
 ## Step 6 -- Spawn sub-agents
 
 For each subtask, delegate to the appropriate sub-agent using the Agent tool, passing the task context and task ID so results can be correlated back to the roadmap.
+
+## Output Format — Work Plan
+
+Instead of directly spawning sub-agents in Step 6, this skill **emits a structured work-plan YAML** that the PI agent reads and executes. The PI is the sole entity that spawns agents from this plan.
+
+```yaml
+work_plan:
+  tasks:
+    - id: "delegate-retrieval"
+      skill: "memory"
+      input: "$ARGUMENTS"
+      depends_on: []
+    - id: "delegate-subtask-1"
+      skill: "<domain-skill>"
+      input: "<subtask-path>"
+      depends_on: ["delegate-retrieval"]
+    - id: "delegate-subtask-2"
+      skill: "<domain-skill>"
+      input: "<subtask-path>"
+      depends_on: ["delegate-retrieval"]
+    - id: "delegate-subtask-3"
+      skill: "<domain-skill>"
+      input: "<subtask-path>"
+      depends_on: ["delegate-retrieval"]
+  parallel_groups:
+    - ["delegate-subtask-1", "delegate-subtask-2", "delegate-subtask-3"]
+```
+
+The decomposed subtasks from Step 4 populate the task list. Each task references a concrete skill and input path. Tasks with no inter-dependency run in parallel within the same group.
 
 ## Preconditions
 

@@ -1,6 +1,7 @@
 ---
 name: status
 description: "/synthex:status -- Query the task DB (intents.db tasks table) and render a Markdown table of current tasks. Use when the user runs /synthex:status to display the current task board."
+role: worker
 disable-model-invocation: true
 allowed-tools: Bash(sqlite3 *) Bash(echo *) Bash(test *)
 ---

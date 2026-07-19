@@ -1,6 +1,7 @@
 ---
 name: init-project
 description: /synthex:init-project "<name>" — Scaffolds complete project structure, runs interactive setup, and launches the pipeline via EnvironmentBuilder -> PipelineDirector. Use when the user runs /synthex:init-project to scaffold a complete project and launch the pipeline.
+role: orchestrator
 disable-model-invocation: true
 ---
 
@@ -49,6 +50,38 @@ Scaffolds a complete Synthex project from scratch. This is the entry point for n
 6. **Launch pipeline.**
    - Hand off to the Pipeline Director agent with the project name and assignment path.
    - The Pipeline Director picks up from the Research phase and begins execution.
+
+## Output Format — Work Plan
+
+Instead of directly launching the pipeline, this skill **emits a structured work-plan YAML** that the PI agent reads and executes. The PI is the sole entity that spawns agents from this plan.
+
+```yaml
+work_plan:
+  tasks:
+    - id: "scaffold-structure"
+      skill: "synthex-init"
+      input: "<project-name>"
+      depends_on: []
+    - id: "create-assignment"
+      skill: "artifact-factory"
+      input: "user-input/assignments/<project-name>.md"
+      depends_on: ["scaffold-structure"]
+    - id: "init-pipeline-state"
+      skill: "track-progress"
+      input: "agent-output/pipeline/<project-name>/pipeline-state.yaml"
+      depends_on: ["create-assignment"]
+    - id: "launch-pipeline-exec"
+      skill: "launch-pipeline"
+      input: "<project-name>"
+      depends_on: ["init-pipeline-state"]
+  parallel_groups:
+    - ["scaffold-structure"]
+    - ["create-assignment"]
+    - ["init-pipeline-state"]
+    - ["launch-pipeline-exec"]
+```
+
+Each step depends on the prior. The PI reads this plan and spawns agents sequentially.
 
 ## Output
 

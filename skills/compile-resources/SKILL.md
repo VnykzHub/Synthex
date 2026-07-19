@@ -1,6 +1,7 @@
 ---
 name: compile-resources
 description: /synthex:compile-resources — Generates reference materials from source files or descriptions via InsightCompiler. Use when the user runs /synthex:compile-resources to generate reference materials from extractions.
+role: command
 disable-model-invocation: true
 ---
 

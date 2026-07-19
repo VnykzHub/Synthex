@@ -1,6 +1,7 @@
 ---
 name: audit
 description: "/synthex:audit -- Compile logs/state_ledger.db and logs/intents.db into a chronological Markdown audit report with event timeline, task summary, and recent KG triples. Use when the user runs /synthex:audit to compile a chronological audit report from the system logs."
+role: worker
 disable-model-invocation: true
 allowed-tools: Bash(sqlite3 *) Bash(echo *) Bash(test *) Bash(mkdir *) Bash(date *) Bash(cat *) Bash(awk *) Bash(printf *) Bash(sed *)
 ---

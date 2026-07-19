@@ -1,6 +1,7 @@
 ---
 name: launch-pipeline
 description: /synthex:launch-pipeline — Main entry point that checks readiness, gathers missing context, and hands off to the PipelineDirector for execution. Use when the user runs /synthex:launch-pipeline to execute the full 5-phase project pipeline.
+role: orchestrator
 disable-model-invocation: true
 ---
 
@@ -61,6 +62,43 @@ Before handoff, the following must be true:
 | Project name is set | Yes | Project name in state must match the resolved project |
 | Memory Vault available | No | Warn if unavailable, proceed without |
 | Tasks defined | No | If empty, Pipeline Director generates them via phase-templates |
+
+## Output Format — Work Plan
+
+Instead of directly handing off to the Pipeline Director, this skill **emits a structured work-plan YAML** that the PI agent reads and executes. The PI is the sole entity that spawns agents from this plan.
+
+```yaml
+work_plan:
+  tasks:
+    - id: "phase-research"
+      skill: "research-loop"
+      input: "user-input/assignments/<project>.md"
+      depends_on: []
+    - id: "phase-planning"
+      skill: "phase-templates"
+      input: "agent-output/pipeline/<project>/pipeline-state.yaml"
+      depends_on: ["phase-research"]
+    - id: "phase-implementation"
+      skill: "task-orchestrator"
+      input: "agent-output/pipeline/<project>/pipeline-state.yaml"
+      depends_on: ["phase-planning"]
+    - id: "phase-review"
+      skill: "review-cycle"
+      input: "agent-output/artifacts/"
+      depends_on: ["phase-implementation"]
+    - id: "phase-validation"
+      skill: "structure-validator"
+      input: "agent-output/src/"
+      depends_on: ["phase-review"]
+  parallel_groups:
+    - ["phase-research"]
+    - ["phase-planning"]
+    - ["phase-implementation"]
+    - ["phase-review"]
+    - ["phase-validation"]
+```
+
+Each phase runs sequentially in dependency order. Within a phase, the Pipeline Director may further decompose tasks using the task-orchestrator skill.
 
 ## Output on completion
 

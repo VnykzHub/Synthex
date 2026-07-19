@@ -1,6 +1,7 @@
 ---
 name: review-cycle
 description: Contains task generation templates for the review, scoring, and automatic re-score loop phases. Use when artifacts need peer review and quality scoring.
+role: worker
 ---
 
 # Review Cycle Skill

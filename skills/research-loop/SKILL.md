@@ -1,6 +1,7 @@
 ---
 name: research-loop
 description: Implements the continuous research loop — hypothesis→experiment→reflect→iterate — with hypothesis tree tracking and Memory Vault integration. Extends experiment-design with iterative capabilities. Use when research questions need systematic exploration across multiple experiments.
+role: worker
 ---
 
 > **⚠ Orchestration entry point:** this skill coordinates multiple agents and tools rather than performing a single atomic task. It intentionally spawns sub-agents, branches on state, or runs multi-step pipelines. See BUILD_PLAN.md Phase 17, Rec 3 for design rationale.

@@ -1,6 +1,7 @@
 ---
 name: recover
 description: /synthex:recover — Resume execution from the last checkpoint. Reads logs/ for failed operations and attempts recovery. Use when the user needs to recover from a crashed or interrupted Synthex session.
+role: worker
 disable-model-invocation: true
 ---
 

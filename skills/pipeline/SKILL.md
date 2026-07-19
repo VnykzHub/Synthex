@@ -1,6 +1,7 @@
 ---
 name: pipeline
 description: "/synthex:pipeline --script=<file> -- Run ETL/ML workloads in the Heavy Compute MCP. Input from user-input/datasets/, output to agent-output/artifacts/. Use when the user runs /synthex:pipeline to execute an ETL/ML workload in the Heavy Compute sandbox."
+role: worker
 disable-model-invocation: true
 allowed-tools: Bash(sqlite3 *) Bash(echo *) Bash(test *) Bash(find *) Bash(mkdir *) Bash(python3 *)
 ---

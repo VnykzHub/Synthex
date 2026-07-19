@@ -1,6 +1,7 @@
 ---
 name: task-orchestrator
 description: Outlines coordination patterns for agents using the shared task list -- sequential, parallel, fan-out, fan-in, and pipeline. Use when PipelineDirector needs to plan task execution order.
+role: worker
 ---
 
 # Task Orchestrator
