@@ -1,6 +1,7 @@
 ---
 name: reproducibility-checker
 description: Validates that experiments can be reproduced with the same results. Use when results need reproducibility verification.
+aliases: [repro-check, validate-reproducibility, verify-repro]
 role: worker
 related_skills: [experiment-auditor, research-loop, scoring-framework, literature-survey]
 ---
@@ -115,3 +116,15 @@ Token budget in compact mode: ~500 tokens.
 3. Collect actionable issues with severity levels (high/medium/low).
 4. Write the reproducibility report.
 5. Log via `log_intent(agent="reproducibility-checker", action="reproducibility.complete", status="<status>", context="<experiment-id>")`.
+
+## Common Mistakes
+
+- **Accepting "it worked on my machine" as sufficient.** Reproducibility requires the environment to be fully specified — Dockerfile, lockfile, or conda env. A list of pip packages without versions is not reproducible.
+- **Checking only the happy path.** If the reproduction instructions only cover the standard run but not edge cases (different OS, different hardware, different seed), the result is only partially reproducible. Test at least two environments.
+- **Confusing code availability with reproducibility.** Code in a GitHub repo is necessary but not sufficient — the code must actually produce the same results when run. Always attempt to regenerate figures and tables, not just verify the code exists.
+
+## Verification
+After producing output, verify correctness before declaring done:
+1. **Six-point checklist completeness:** Confirm that all 6 reproducibility dimensions have a status (pass/fail/partial) and a non-empty notes field. Any dimension left unassessed is a gap in the report.
+2. **Issue-actionability check:** Verify that every issue in the issues list has a severity level (high/medium/low) AND an actionable recommendation. Issues without recommendations are incomplete.
+3. **Self-check:** Re-read the output against the requirements. Does it address every item in the task brief? Are all referenced paths valid? Are all YAML/JSON blocks syntactically valid?

@@ -1,6 +1,7 @@
 ---
 name: structure-validator
 description: Validation for folder boundaries, YAML structure, naming, file existence. Use when validating structural requirements.
+aliases: [validate-structure, check-structure, lint]
 role: worker
 related_skills: [artifact-factory, preflight, registry-manager, enable-validation]
 ---
@@ -16,6 +17,11 @@ Python validation patterns for folder boundaries, YAML structures, naming conven
 - You need to confirm that required files exist and are non-empty
 - You are generating validation scripts for use in CI or scheduled tasks
 - You are verifying artifacts before delivery
+
+**Do NOT use when:**
+- The task is a simple single-step validation that can be done with a quick grep or test command (use direct tool calls instead)
+- The user explicitly asks for a different validation approach or tool
+- The required schema files are not available in `knowledgebase/schemas/` and no alternative schema is provided
 
 ## Core principles
 
@@ -229,3 +235,9 @@ Return a structured result:
   ]
 }
 ```
+
+## Verification
+After producing output, verify correctness before declaring done:
+1. **Self-validation:** Run the structure-validator's own validation functions against its output schema. The output manifest must itself pass structural validation — valid JSON, required keys (target, passed, failed, warnings, findings), and non-empty findings list when failures exist.
+2. **Severity consistency check:** Verify that every finding has a severity level (error or warning) and that errors are not misclassified as warnings. A misclassified severity undermines the entire validation.
+3. **Self-check:** Re-read the output against the requirements. Does it address every item in the task brief? Are all referenced paths valid? Are all YAML/JSON blocks syntactically valid?

@@ -1,6 +1,7 @@
 ---
 name: knowledge-graph
 description: Query and extend semantic knowledge graph for codebase relationships. Use when tracing deps or retrieving indexed docs.
+aliases: [graph, kg, semantic-graph, entity-graph]
 role: worker
 related_skills: [data-lineage, memory, data-interpreter]
 ---
@@ -94,3 +95,15 @@ When a user asks "What depends on the `parse_config` function?":
 3. Call `vector_retrieve(query="config parsing logic", top_k=3, scope="knowledgebase")` to find relevant documentation.
 4. If a new dependency is discovered, call `kg_add(subject="parse_config", predicate="called-by", object="main.py", source="code-review")`.
 5. Verify with `kg_query(subject="parse_config", predicate="called-by", object="")` and summarize results to the user.
+
+## Common Mistakes
+
+- **Inconsistent predicate naming.** Using "depends-on" in one triple and "depends_on" or "dependency_of" in another makes graph queries unreliable. Standardize predicate names in a controlled vocabulary and validate every kg_add call against it.
+- **Adding triples without provenance.** A triple without a source tag cannot be audited or trusted. Every kg_add call must include a source string identifying the file, agent, or conversation turn that generated the relationship.
+- **Confusing graph lookup with vector search.** Using kg_query for fuzzy semantic search (e.g., "find papers about personalization") returns no results when the exact entity name is unknown. Use vector_retrieve for semantic queries and kg_query for exact structural lookups.
+
+## Verification
+After producing output, verify correctness before declaring done:
+1. **Triple round-trip check:** After adding triples via kg_add, immediately re-query with kg_query to confirm the new triples are returned. If the graph does not reflect the additions, retry with explicit source tags.
+2. **No dangling references:** Verify that every object referenced in a triple exists as a subject in at least one other triple. Entities referenced but never defined should be flagged as orphans.
+3. **Self-check:** Re-read the output against the requirements. Does it address every item in the task brief? Are all referenced paths valid? Are all YAML/JSON blocks syntactically valid?

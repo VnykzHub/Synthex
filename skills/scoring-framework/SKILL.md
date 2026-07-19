@@ -1,6 +1,7 @@
 ---
 name: scoring-framework
 description: Weighted multi-dimension scoring with failure classification and regression. Use when quality scoring is needed.
+aliases: [score, rate, evaluate, grade]
 role: worker
 related_skills: [experiment-auditor, review-cycle, reproducibility-checker, structure-validator]
 ---
@@ -113,3 +114,15 @@ Return a structured result:
   }
 }
 ```
+
+## Common Mistakes
+
+- **Assigning scores without justifications.** A dimension score of 72 without explanatory text is meaningless — no one can verify, challenge, or learn from it. Every score must include a justification that references specific evidence.
+- **Using inconsistent weights across evaluations.** If two reviewers use different weight sets for the same artifact type, the resulting scores are not comparable. Weights must be standardized per artifact type and documented in the evaluation metadata.
+- **Ignoring regression deltas under 5 points.** A 3-point drop may seem small, but in high-stakes evaluations it can indicate systematic drift. Even minor regressions should be investigated, not silently accepted.
+
+## Verification
+After producing output, verify correctness before declaring done:
+1. **Weight sum validation:** Confirm that all dimension weights sum to exactly 100%. A validation routine should reject any input where weights total != 100% before computing the weighted total.
+2. **Prior score retrieval confirmation:** Verify that the regression check actually found and read a prior score file. If no prior score exists, ensure the output explicitly states "No prior score — first assessment" rather than silently omitting the regression section.
+3. **Self-check:** Re-read the output against the requirements. Does it address every item in the task brief? Are all referenced paths valid? Are all YAML/JSON blocks syntactically valid?

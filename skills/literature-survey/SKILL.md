@@ -1,6 +1,7 @@
 ---
 name: literature-survey
 description: Search arXiv/Semantic Scholar, synthesize findings, identify gaps. Use when systematic literature review is needed.
+aliases: [lit-review, paper-survey, research-survey]
 role: worker
 related_skills: [research-loop, reproducibility-checker, knowledge-graph, scoring-framework]
 ---
@@ -101,3 +102,9 @@ Maintain a cumulative log at `agent-output/artifacts/surveys/LITERATURE_LOG.md`.
 ```
 
 The LITERATURE_LOG.md serves as a cumulative repository so no survey effort is ever lost. Before starting a new survey, read the existing log to avoid duplicating prior work.
+
+## Verification
+After producing output, verify correctness before declaring done:
+1. **Citation accuracy check:** Verify that every cited paper in the key_findings section has a corresponding entry in the papers_retained list. If a paper is cited but not in the retained list, it was not properly screened — flag this as an integrity issue.
+2. **Gap-actionability review:** Confirm that each identified research gap is specific enough to be actionable. Vague gaps like "more research needed" are not useful. A good gap specifies the missing population, domain, methodology, or time horizon.
+3. **Self-check:** Re-read the output against the requirements. Does it address every item in the task brief? Are all referenced paths valid? Are all YAML/JSON blocks syntactically valid?

@@ -1,5 +1,6 @@
 ---
 name: research-loop
+aliases: [experiment-loop, hypothesis-testing, research-cycle]
 description: "Continuous research loop: hypothesize, experiment, reflect, iterate. Use when exploring across experiments."
 role: worker
 related_skills: [experiment-auditor, reproducibility-checker, literature-survey, scoring-framework]
@@ -150,4 +151,51 @@ loop_iteration:
     - "vector_retrieve:related_experiments"
     - "log_intent:hyp-003"
     - "kg_add:hyp-003->exp-20260718-003"
+```
+
+## Common Mistakes
+
+- **Skipping the null hypothesis.** Running an experiment without a falsifiable H0 leads to confirmation bias. Always formulate H0 and H1 before collecting data. The research-loop judgment gate requires both.
+- **Ignoring effect size.** A statistically significant result with a tiny effect size may be practically useless. Always report effect size alongside p-values.
+- **Peeking at results mid-experiment.** Checking results before the pre-registered sample size is reached invalidates the statistical test. Lock the analysis plan before data collection begins.
+
+## Verification
+After producing output, verify correctness before declaring done:
+1. **Hypothesis tree completeness:** Confirm every hypothesis node has a status, judgment_score, and reflection_decision. Missing fields break downstream analysis.
+2. **Memory Vault sync:** Verify that `vector_retrieve`, `log_intent`, and `kg_add` calls completed without error. Rerun any that failed before concluding the loop.
+3. **Self-check:** Re-read the output against the requirements. Does it address every item in the task brief? Are all referenced paths valid? Are all YAML/JSON blocks syntactically valid?
+
+## Worked Example
+
+**Scenario:** A product team wants to know whether personalized onboarding increases 7-day user retention in a mobile fitness app. They have 10,000 users available for a 14-day experiment.
+
+**Step-by-step walkthrough:**
+
+1. **Hypothesize (Step 1):** H0: Personalized onboarding has no effect on D7 retention. H1: Personalized onboarding increases D7 retention by >= 5%. Score: novelty=3, falsifiability=5, information_gain=4. Register as `hyp-001`.
+
+2. **Design (Step 2):** Design a two-arm randomized experiment with 5,000 users per arm. Control gets standard onboarding; treatment gets personalized workout recommendations. Power analysis: n=3,800 per arm needed (80% power, alpha=0.05, delta=5%). Pre-register the analysis plan.
+
+3. **Execute (Step 3):** Route to the Automation Engineer. The experiment runs for 14 days. Logs written to `agent-output/artifacts/experiments/exp-20260718-001/`.
+
+4. **Measure (Step 4):** Control retention = 34.2%, Treatment retention = 40.1%. Effect size = 5.9 percentage points (Cohen's h = 0.12). p = 0.002, CI [2.1%, 9.7%].
+
+5. **Reflect (Step 5):** H0 rejected. Effect confirmed at 5.9% with p=0.002. Decision: `go_broader` — does the effect persist when segmented by user activity level?
+
+6. **Iterate (Step 6):** Register `hyp-002` exploring moderation by activity level. Update the hypothesis tree.
+
+**Sample output:**
+
+```yaml
+loop_iteration:
+  iteration: 1
+  timestamp: 2026-07-18T14:30:00Z
+  hypothesis_id: "hyp-001"
+  step: reflect
+  status: complete
+  reflection_decision: go_broader
+  rationale: "H0 rejected (p=0.002, delta=5.9pp). Effect exceeds minimum detectable threshold. Explore moderation by user segment."
+  memory_vault_keys:
+    - "vector_retrieve:onboarding_papers"
+    - "log_intent:hyp-001"
+    - "kg_add:hyp-001->exp-20260718-001"
 ```

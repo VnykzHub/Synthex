@@ -1,6 +1,7 @@
 ---
 name: artifact-factory
 description: Generator patterns for YAML, Markdown, code, and tests from templates. Use when generating structured artifacts.
+aliases: [generate, scaffold, create-artifact, factory]
 role: worker
 related_skills: [structure-validator, pre-submission-checklist, add-component]
 ---
@@ -263,3 +264,9 @@ Return a file manifest:
   "errors": []
 }
 ```
+
+## Verification
+After producing output, verify correctness before declaring done:
+1. **Syntax gate retrospect:** Confirm that every file in the output manifest passed its syntax gate before being written. If the manifest contains files but the gate was bypassed, the validation is compromised. Re-run `validate_artifact()` on a sample of output files.
+2. **Template fidelity check:** For template-generated artifacts, verify that no `{{...}}` placeholders remain unresolved in the output. Unresolved placeholders indicate a template population failure that must be fixed before delivery.
+3. **Self-check:** Re-read the output against the requirements. Does it address every item in the task brief? Are all referenced paths valid? Are all YAML/JSON blocks syntactically valid?

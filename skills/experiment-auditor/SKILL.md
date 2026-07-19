@@ -1,6 +1,7 @@
 ---
 name: experiment-auditor
 description: "Six-dimension audit: data, stats, code, methodology, leakage, sanity. Use when experiment results need validation."
+aliases: [audit-experiment, validate-experiment, experiment-check]
 role: worker
 related_skills: [research-loop, reproducibility-checker, scoring-framework, structure-validator]
 ---
@@ -135,3 +136,49 @@ Token budget in compact mode: ~500 tokens.
 4. Determine overall_status: pass if no dimension fails AND at most one dimension needs_revision; needs_revision if any dimension needs_revision and none fail; fail if any dimension scores below 50.
 5. Write the audit report to `agent-output/artifacts/audits/`.
 6. Log the audit via `log_intent(agent="experiment-auditor", action="audit.complete", status="<status>", context="<experiment-id>")`.
+
+## Common Mistakes
+
+- **Confusing statistical significance with practical significance.** A p < 0.001 result with an effect size of 0.01% may be statistically significant but practically meaningless. Always check effect size and domain relevance before approving results.
+- **Auditing only the analysis code, not the data pipeline.** If the data pipeline that produced the input has a bug, the cleanest analysis code will still produce wrong conclusions. Include the full data provenance chain in every audit.
+- **Ignoring multiple comparison inflation.** Testing 20 secondary metrics at alpha=0.05 gives a ~64% chance of at least one false positive. Require correction for all confirmatory analyses; flag exploratory findings as hypothesis-generating only.
+
+## Verification
+After producing output, verify correctness before declaring done:
+1. **Score justification completeness:** Verify that every dimension score has a non-empty justification and that every issue in the issues list maps to a specific dimension. Scores without justification are invalid.
+2. **Pre-registration alignment:** Re-read the pre-registration document and confirm the audit checked each pre-registered analysis. If the analysis deviated from pre-registration, that deviation itself must be flagged.
+3. **Self-check:** Re-read the output against the requirements. Does it address every item in the task brief? Are all referenced paths valid? Are all YAML/JSON blocks syntactically valid?
+
+## Worked Example
+
+**Scenario:** A data scientist claims that a new recommendation algorithm increased click-through rate by 8%. The experiment-auditor must validate this claim across all six dimensions before results enter the knowledgebase.
+
+**Step-by-step walkthrough:**
+
+1. **Data Quality:** Check the experiment logs. 1.2% of users have missing treatment assignments. The data scientist used mean imputation, but median would be more robust for this skewed metric. Score: 82.
+
+2. **Statistical Correctness:** The primary test is a two-sample t-test. Check assumptions: normality (Q-Q plot passes), equal variance (Levene's test p=0.23, passes). Effect size: Cohen's d = 0.08 (small). Multiple comparison correction was applied to 3 secondary metrics (Bonferroni, alpha=0.0167). Score: 88.
+
+3. **Code Correctness:** Analysis scripts are in GitHub with pinned requirements.txt. Random seed is fixed. A notebook has hardcoded paths that would fail on another machine. Score: 85.
+
+4. **Methodology Soundness:** Randomization was at the user level, which is correct. However, the experiment ran for only 3 days -- potential novelty effect. Score: 72.
+
+5. **Data Leakage:** The recommendation model was trained on data that included the experiment period's earlier interactions -- mild temporal leakage. Score: 78.
+
+6. **Sanity Checks:** A/A test passes (p=0.31). Sign expectation matches domain knowledge. Score: 90.
+
+**Sample output:**
+
+```yaml
+audit_id: "audit-20260718-001"
+experiment_id: "exp-20260718-001"
+overall_status: needs_revision
+dimensions:
+  data_quality: {score: 82, status: pass, issues: ["Imputation method should be median, not mean"]}
+  statistical_correctness: {score: 88, status: pass, issues: []}
+  code_correctness: {score: 85, status: pass, issues: ["Hardcoded paths in notebook"]}
+  methodology_soundness: {score: 72, status: needs_revision, issues: ["3-day study -- novelty effect risk"]}
+  data_leakage: {score: 78, status: needs_revision, issues: ["Mild temporal leakage in training data"]}
+  sanity_checks: {score: 90, status: pass, issues: []}
+summary: "Result is promising but needs revision: extend study to 14 days, fix temporal leakage, and switch to median imputation before accepting."
+```

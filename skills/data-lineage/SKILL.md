@@ -1,6 +1,7 @@
 ---
 name: data-lineage
 description: Track data lineage: schema evolution, grain, impact assessment. Use when mapping ETL pipelines or validating schemas.
+aliases: [lineage, data-trace, etl-trace, schema-evolution]
 role: worker
 related_skills: [knowledge-graph, structure-validator, task-tracking]
 ---
@@ -76,3 +77,57 @@ scd2_backfills:
 ```
 
 Always include the validation status (grain_ok: true/false) and an ISO-8601 timestamp for every lineage entry.
+
+## Common Mistakes
+
+- **Assuming grain consistency without verification.** Two datasets may both claim "one row per order" but differ on what constitutes an order (e.g., line-item vs. header). Always compare the actual unique key constraints, not just the description.
+- **Ignoring type widening/narrowing.** A source column change from INTEGER to BIGINT is non-breaking, but BIGINT to INTEGER silently truncates values. Every schema hop must check type compatibility, not just column presence.
+- **Documenting lineage after the fact.** Reconstructing lineage from memory weeks after a pipeline change introduces omissions and inaccuracies. Document each hop immediately when the change is made, using the lineage_trace tool.
+
+## Verification
+After producing output, verify correctness before declaring done:
+1. **Grain assertion check:** For every dataset in the lineage, assert that the declared grain is verified by actual key uniqueness. Run a quick SQL/Pandas uniqueness check on the business key columns.
+2. **Schema diff validation:** Verify that every schema change between hops is classified and that breaking changes are flagged with a recommendation. Re-read the schema_changes list against actual column definitions.
+3. **Self-check:** Re-read the output against the requirements. Does it address every item in the task brief? Are all referenced paths valid? Are all YAML/JSON blocks syntactically valid?
+
+## Worked Example
+
+**Scenario:** An e-commerce team notices that the `customer_orders` table shows 15% fewer orders than the source transaction system. They need to trace the lineage to find where records are dropped.
+
+**Step-by-step walkthrough:**
+
+1. **Identify grain:** The source `raw_transactions` has grain "one row per transaction line item per event timestamp". The final `customer_orders` table claims "one row per order". This grain change from transaction to order-level requires aggregation.
+
+2. **Map the chain:** Raw ingest -> staging -> cleansing -> aggregation -> final model. There are 5 transformation hops.
+
+3. **Validate each hop:** Hops 1-3 pass. Hop 4 (aggregation) uses `GROUP BY order_id` but also filters `WHERE status != 'cancelled'`. This filter drops cancelled orders before counting -- the business expected cancelled orders to be included with a flag.
+
+4. **Classify the issue:** The filter is a breaking schema change because it silently removes records without documentation. Flagged as a data quality issue.
+
+5. **Document SCD2:** The `dim_customer` table had a late-arriving address correction that required a backfill. Record the `valid_from`/`valid_to` range.
+
+**Sample output:**
+
+```yaml
+pipeline: customer_orders_etl
+grain: "one row per order"
+grain_ok: false
+source: user-input/datasets/raw_transactions.csv
+target: agent-output/src/models/staging/orders.sql
+transformations:
+  - step: 4
+    tool: dbt
+    logic: "filter(status != 'cancelled') THEN GROUP BY order_id"
+    grain_before: "one row per transaction line item"
+    grain_after: "one row per order"
+    validated_by: DataEngineer
+    timestamp: 2026-07-18T10:30:00Z
+schema_changes:
+  - from: status (string, nullable)
+    to: "(filtered out where status = 'cancelled')"
+    breaking: true
+issues:
+  - hop: 4
+    severity: high
+    description: "Silent filter drops cancelled orders (15% of volume) before aggregation"
+```

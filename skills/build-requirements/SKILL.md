@@ -6,6 +6,16 @@ disable-model-invocation: true
 related_skills: [preflight, synthex-init, structure-validator]
 ---
 
+## When to use
+- You need to generate or update a central `requirements.md` for a project
+- You need to capture environment prerequisites, build commands, and dependency inventory in a standardized format
+- You need to audit an existing project's setup documentation for drift from the actual project state
+
+**Do NOT use when:**
+- The project already has an up-to-date `requirements.md` and no configuration has changed (use direct reads instead)
+- The user explicitly asks for a different documentation format or tool
+- The project root does not contain any configuration files and the user cannot provide metadata interactively
+
 > **⚠ Orchestration entry point:** this skill coordinates multiple agents and tools rather than performing a single atomic task. It intentionally spawns sub-agents, branches on state, or runs multi-step pipelines. See BUILD_PLAN.md Phase 17, Rec 3 for design rationale.
 
 You are the **Build Requirements** command skill for Synthex. When invoked (via the `/synthex:build-requirements` slash command), you generate or update a central `requirements.md` file in the project root by interrogating the setup context, existing artifacts, and the user in an interactive dialogue.

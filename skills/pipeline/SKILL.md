@@ -1,6 +1,7 @@
 ---
 name: pipeline
 description: "/synthex:pipeline — Run ETL/ML workloads in Heavy Compute MCP. Use when running /synthex:pipeline."
+aliases: [etl, data-pipeline, workflow, job]
 role: worker
 disable-model-invocation: true
 allowed-tools: Bash(sqlite3 *) Bash(echo *) Bash(test *) Bash(find *) Bash(mkdir *) Bash(python3 *)
@@ -104,3 +105,44 @@ Token budget in compact mode: ~500 tokens.
 ## Step 6 -- Report
 
 Summarize for the user: validation results, execution time, output location, and any errors or warnings.
+
+## Common Mistakes
+
+- **Running pipelines without input validation.** If the dataset has unexpected schema or missing columns, the pipeline fails mid-execution wasting compute time. Always run etl_validate on the dataset before the full pipeline execution.
+- **Hardcoding paths in pipeline scripts.** A script with absolute paths works on one machine and breaks everywhere else. Use SYNTHEX_ROOT-relative paths or accept them as CLI arguments.
+- **Skipping the audit log insert.** A pipeline that runs successfully but does not record its execution in state_ledger leaves no trace for downstream auditing. Always log the pipeline run, including exit code and output location.
+
+## Verification
+After producing output, verify correctness before declaring done:
+1. **Output existence and freshness:** Verify that the pipeline output files exist at the expected path and have a recent modification timestamp (within the last 5 minutes of the run). Empty or stale output indicates a silent failure.
+2. **State ledger audit trail:** Confirm that the pipeline run was logged in `state_ledger.db` with correct exit code, output path, and timestamp. Run a SELECT query to verify the row exists.
+3. **Self-check:** Re-read the output against the requirements. Does it address every item in the task brief? Are all referenced paths valid? Are all YAML/JSON blocks syntactically valid?
+
+## Worked Example
+
+**Scenario:** A data engineer needs to run a daily ETL pipeline that ingests raw customer transaction CSV files, cleanses them, and produces a curated Parquet dataset for analysis.
+
+**Step-by-step walkthrough:**
+
+1. **Resolve script:** The pipeline script is at `user-input/assignments/etl_customer_orders.py`. Pass `--script=user-input/assignments/etl_customer_orders.py`.
+
+2. **Validate input:** Run `etl_validate(path="user-input/datasets/raw_orders_20260718.csv", expectations="")`. Returns `{rows: 50000, columns: 12, grain_ok: true, issues: []}`. Proceed.
+
+3. **Execute:** Run the pipeline script via Docker with python:3.12. Mount the datasets directory. Execution takes 4 minutes and exits with code 0.
+
+4. **Collect outputs:** The script generates `cleansed_orders.parquet` and `summary_stats.json`. Copy to `agent-output/artifacts/pipeline-1721294400/`.
+
+5. **Log to state_ledger:** Insert a row with agent="automation-engineer", event_type="pipeline.run", details containing the script path, exit code, and output location.
+
+**Sample output:**
+
+```
+=== PIPELINE REPORT ===
+Script: user-input/assignments/etl_customer_orders.py
+Validation: PASS (50000 rows, 12 columns, grain OK)
+Execution: COMPLETE (exit 0, 240s wall time)
+Output: agent-output/artifacts/pipeline-1721294400/
+  - cleansed_orders.parquet (8.2 MB)
+  - summary_stats.json (1.8 KB)
+Audit: logged to state_ledger (id=9876)
+```

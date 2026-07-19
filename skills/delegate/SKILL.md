@@ -1,6 +1,7 @@
 ---
 name: delegate
 description: "/synthex:delegate — Send task to PI for decomposition, context, agent assignment. Use when running /synthex:delegate."
+aliases: [assign, hand-off, dispatch, route]
 role: orchestrator
 disable-model-invocation: true
 allowed-tools: Bash(sqlite3 *) Bash(echo *) Bash(mkdir *) Bash(find *)
@@ -127,3 +128,15 @@ Token budget in compact mode: ~500 tokens.
 ## Step 7 -- Summarize
 
 Report back to the user: what $ARGUMENTS was decomposed into, which agents were assigned, and where to track progress (`agent-output/artifacts/roadmap.md`).
+
+## Common Mistakes
+
+- **Delegating without context retrieval.** Sending a task to a sub-agent without first retrieving relevant context from the Memory Vault forces the sub-agent to rediscover what is already known. Always call vector_retrieve before decomposing the task.
+- **Over-decomposing trivial tasks.** Breaking a 2-minute task into 5 subtasks with dependencies adds overhead with zero benefit. Use direct delegation for simple tasks; reserve decomposition for tasks with at least 3 distinct domains or steps.
+- **Forgetting to update the roadmap.** After spawning sub-agents, failing to update `roadmap.md` means the PI loses visibility into what is running, who owns it, and what is blocked. The roadmap must be updated immediately after task creation.
+
+## Verification
+After producing output, verify correctness before declaring done:
+1. **Task record completeness:** Verify that every subtask has a valid task ID, title, priority, assigned_to, and status in the `tasks` table. Run a SELECT query and confirm no row has NULL in required fields.
+2. **Roadmap consistency:** Confirm that `agent-output/artifacts/roadmap.md` reflects every task in the work plan. Cross-reference task IDs between the roadmap and the database. Flag any mismatches.
+3. **Self-check:** Re-read the output against the requirements. Does it address every item in the task brief? Are all referenced paths valid? Are all YAML/JSON blocks syntactically valid?

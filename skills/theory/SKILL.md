@@ -7,6 +7,16 @@ allowed-tools: Bash(sqlite3 *) Bash(echo *) Bash(find *) Bash(grep *) Bash(cat *
 related_skills: [literature-survey, data-interpreter, research-loop]
 ---
 
+## When to use
+- You need to verify a mathematical proof, complexity bound, or asymptotic claim in source materials
+- You need to symbolically solve or simplify mathematical expressions using sympy or manual derivation
+- You need to analyze algorithm performance bounds with profiling or asymptotic analysis
+
+**Do NOT use when:**
+- The task is a simple arithmetic calculation (use direct python3 or calculator instead)
+- The user explicitly asks for a different analytical approach or tool
+- The required input files (`.tex`, `.md`, `.pdf`) do not exist in `user-input/` and no problem statement is provided in $ARGUMENTS
+
 # /synthex:theory -- Theoretical analysis: proofs, complexity, bounds
 
 $ARGUMENTS may specify a file or problem statement.

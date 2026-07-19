@@ -1,6 +1,7 @@
 ---
 name: report
 description: "/synthex:report — Synthesize reports into a deliverable (ppt/html/pdf). Use when running /synthex:report."
+aliases: [generate-report, compile, synthesize, deliverable]
 role: orchestrator
 allowed-tools: Read(*) Bash(sqlite3 *) Bash(echo *) Bash(find *) Bash(mkdir *) Bash(test *)
 disable-model-invocation: true
@@ -146,3 +147,47 @@ fi
 ```
 
 Report the output path and format to the user.
+
+## Common Mistakes
+
+- **Including external dependencies in the output.** An HTML report that loads Chart.js from a CDN will be broken when viewed offline or in an air-gapped environment. Embed all JS, CSS, and fonts inline or use self-contained alternatives.
+- **Skipping the executive summary.** A report that dives straight into methodology without summarizing findings forces every reader to read the entire document to understand the conclusion. Always put an executive summary as the second element (after title).
+- **Generating visualizations without data labels.** A chart with no axis labels, no legend, and no data point values is uninterpretable. Every visualization must have labelled axes, a legend if multi-series, and either data labels or a hover tooltip.
+
+## Verification
+After producing output, verify correctness before declaring done:
+1. **Format-specific validation:** For HTML: open the file and verify it renders without JS errors and all assets are inline. For PPTX: verify the file opens and slides are in correct order. For PDF: verify text is selectable (not rasterized) and hyperlinks work.
+2. **Source material coverage:** Cross-reference the report's findings section against the source materials gathered in Step 2. Every key finding in the sources should appear in the report; flag any source that was read but not cited.
+3. **Self-check:** Re-read the output against the requirements. Does it address every item in the task brief? Are all referenced paths valid? Are all YAML/JSON blocks syntactically valid?
+
+## Worked Example
+
+**Scenario:** A research team needs an executive summary report in HTML format documenting the results of a 3-week A/B test on personalized onboarding. The report must be self-contained and shareable with non-technical stakeholders.
+
+**Step-by-step walkthrough:**
+
+1. **Parse arguments:** User calls `/synthex:report --type html --topic "Personalized Onboarding A/B Test Results"`. Output format is HTML.
+
+2. **Gather source material:** Read experiment results from `agent-output/artifacts/experiments/exp-20260718-001/`, audit report from `agent-output/artifacts/audits/audit-20260718-001.yaml`, and reproducibility check from `agent-output/artifacts/reproducibility/repro-20260718-001.yaml`.
+
+3. **Synthesize content:** Structure the report with: executive summary (D7 retention improved 5.9%, p=0.002), methodology (two-arm RCT, 10K users, 14-day study), findings with charts, and recommendations (extend study, add Android users).
+
+4. **Generate HTML:** Build a single self-contained HTML file with inline CSS and inline SVG charts (no CDN dependencies). Write to `agent-output/artifacts/report-onboarding-ab-test.html`.
+
+5. **Log and report:** Insert audit record in state_ledger and report the output path.
+
+**Sample output:**
+
+```
+=== REPORT GENERATED ===
+Format: html
+Output: agent-output/artifacts/report-onboarding-ab-test.html
+Size: 42 KB
+Sections:
+  1. Title & Metadata
+  2. Executive Summary: "Personalized onboarding improved D7 retention by 5.9% (p=0.002)"
+  3. Methodology: Two-arm RCT, 10,000 users, 14-day study
+  4. Findings with 3 inline SVG charts
+  5. Recommendations
+Audit: logged to state_ledger (id=9988)
+```

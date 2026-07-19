@@ -1,6 +1,7 @@
 ---
 name: preflight
 description: "/synthex:preflight — Read-only dry-run of pipeline readiness. Use when running /synthex:preflight."
+aliases: [check, validate, dry-run, readiness-check]
 role: gate
 disable-model-invocation: true
 related_skills: [structure-validator, registry-manager, launch-pipeline]
@@ -163,3 +164,9 @@ OVERALL STATUS: PASS | PASS_WITH_WARNINGS | FAIL
 - The `disable-model-invocation: true` flag means this skill runs as a command — validation logic is executed directly without LLM generation.
 - Reports are printed to stdout and not persisted to disk.
 - The skill returns a zero exit code regardless of findings — the report content communicates readiness, not the exit code.
+
+## Verification
+After producing output, verify correctness before declaring done:
+1. **Report completeness check:** Verify that all report sections (Assignment, Pipeline State, Sandbox Structure, Memory Vault, Issues) are present in the preflight output. A missing section means a validation step was skipped.
+2. **Read-only enforcement:** Scan the operation log to confirm no files were created, modified, or deleted during the preflight run. If any write operation was performed, flag the violation immediately — the preflight skill is strictly read-only.
+3. **Self-check:** Re-read the output against the requirements. Does it address every item in the task brief? Are all referenced paths valid? Are all YAML/JSON blocks syntactically valid?

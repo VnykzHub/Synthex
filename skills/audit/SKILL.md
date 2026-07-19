@@ -1,6 +1,7 @@
 ---
 name: audit
 description: "/synthex:audit -- Compile system logs into a Markdown report. Use when running /synthex:audit."
+aliases: [audit-log, audit-report, review-log]
 role: worker
 disable-model-invocation: true
 related_skills: [experiment-auditor, knowledge-graph, task-tracking, report]
@@ -116,3 +117,15 @@ echo "Audit report written to: $OUTPUT_FILE"
 ```
 
 Report the output path to the user.
+
+## Common Mistakes
+
+- **Running audits without checking DB connectivity.** If intents.db or state_ledger.db is missing or locked, the audit produces an empty report without warning. Always verify database existence and readability before extracting data.
+- **Ignoring SQL injection risks in audit queries.** When inserting event details into state_ledger, unescaped single quotes break the INSERT and can corrupt the database. Always escape single quotes using `sed "s/'/''/g"` or use parameterized queries.
+- **Generating reports that are too long to be useful.** An audit with 500+ events printed as a single unbroken table is overwhelming. Always paginate or summarize: show the most recent 50 events and offer to export the full log separately.
+
+## Verification
+After producing output, verify correctness before declaring done:
+1. **Database extract validation:** Confirm that the SQL queries against intents.db and state_ledger.db returned non-empty results. If either query returned zero rows, verify the database files exist and contain expected tables before declaring the audit complete.
+2. **Report format integrity:** Open the generated Markdown file and verify that all 4 sections (Event Timeline, Intent Log, Task Summary, KG Triples) are present and contain correctly formatted table rows. A section with no rows should still render with valid table headers.
+3. **Self-check:** Re-read the output against the requirements. Does it address every item in the task brief? Are all referenced paths valid? Are all YAML/JSON blocks syntactically valid?

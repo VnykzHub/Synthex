@@ -1,9 +1,20 @@
 ---
 name: task-orchestrator
-description: "Coordination patterns for shared task list: sequential, parallel, fan-out, fan-in. Use when planning execution order."
+description: "Coordination patterns for shared task lists across agents: sequential, parallel, fan-out, fan-in, and DAG pipelines. Use when planning task execution order across multiple agents for any multi-agent workflow."
+aliases: [orchestrate, plan-tasks, coordinate, workflow]
 role: worker
 related_skills: [task-tracking, phase-templates, pipeline, delegate]
 ---
+
+## When to use
+- You need to coordinate multiple tasks with dependencies, parallel execution, or fan-out/fan-in patterns
+- You need to track task lifecycle state across agents in a shared system
+- You need to detect and unblock stalled tasks with automated retry logic
+
+**Do NOT use when:**
+- The task is a simple single-step operation that can be completed with direct tool calls
+- The user explicitly asks for a different approach or task tracking system
+- The `logs/intents.db` database is not available or writable (the orchestrator requires the `tasks` table)
 
 # Task Orchestrator
 
@@ -115,4 +126,10 @@ A combination of fan-out and fan-in across multiple stages. Arbitrary DAG struct
 
 - Any task that remains `in-progress` for longer than its `timeout` (configurable per task, default 600s) is automatically set to `status='failed'`.
 - Failed tasks can be retried: re-set `status='pending'` and clear `assigned_to`. Dependencies of downstream tasks remain unblocked until the retry completes.
-- If a task has `max_retries` (default 3) and has been retried that many times, further retry attempts are rejected and the orchestrator escalates to the Principal Investigator.
+- If a task has `max_retries` (default 3) and has been retried that many times, further retry attempts are rejected and the orchestrator escalates to a human supervisor or designated escalation path.
+
+## Verification
+After producing output, verify correctness before declaring done:
+1. **Dependency graph consistency:** Verify that no task has a dependency on a task that does not exist in the task list. A broken dependency reference will cause the orchestrator to wait indefinitely. Run a graph cycle-detection check.
+2. **Status transition audit:** Confirm that every task's status transition is valid per the lifecycle (e.g., a task going from CREATE directly to COMPLETE without CLAIM is invalid). Invalid transitions indicate a bug in the orchestrator logic.
+3. **Self-check:** Re-read the output against the requirements. Does it address every item in the task brief? Are all referenced paths valid? Are all YAML/JSON blocks syntactically valid?
