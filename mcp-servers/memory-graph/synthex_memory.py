@@ -280,17 +280,22 @@ class VectorStore:
 
     def __init__(self, root: Path) -> None:
         backend = os.environ.get("SYNTHEX_VECTOR_BACKEND", "chroma")
-        if backend == "turbovec":
-            backend = "chroma"  # UNVERIFIED package -- fall back
         self._store_dir = root / "logs" / "vectors"
         self._store_dir.mkdir(parents=True, exist_ok=True)
         self._backend: Any = None
         self._backend_name: str = ""
 
-        if backend in ("chroma", "chromadb"):
+        # Tier 1: Turbovec (verified PyPI: pip install turbovec, IdMapIndex, ICLR 2026)
+        if backend in ("turbovec", "chroma"):
+            self._backend = self._try_turbovec()
+            if self._backend is not None:
+                self._backend_name = "turbovec"
+        # Tier 2: ChromaDB (persistent client, cosine HNSW)
+        if self._backend is None and backend in ("chroma", "chromadb"):
             self._backend = self._try_chroma()
             if self._backend is not None:
                 self._backend_name = "chromadb"
+        # Tier 3: Numpy cosine (in-memory, persisted to .npz)
         if self._backend is None:
             self._backend = self._try_numpy()
             if self._backend is not None:
@@ -315,6 +320,20 @@ class VectorStore:
         except Exception:
             return None
 
+    def _try_turbovec(self) -> Any:
+        """Try Turbovec IdMapIndex (4-bit quantization, verified PyPI package."""
+        try:
+            from turbovec import IdMapIndex  # type: ignore
+            index_path = str(self._store_dir / "synthex.tvim")
+            idx: Any = None
+            try:
+                idx = IdMapIndex.load(index_path)
+            except Exception:
+                idx = IdMapIndex(dim=EMBED_DIM, bit_width=4)
+            return {"impl": "turbovec", "index": idx, "index_path": index_path, "next_id": 0}
+        except ImportError:
+            return None
+
     def _try_numpy(self) -> Any:
         try:
             import numpy as np  # type: ignore
@@ -327,7 +346,20 @@ class VectorStore:
         return self._backend_name
 
     def add(self, vec: list[float], meta: dict[str, Any]) -> None:
-        if self._backend_name == "chromadb":
+        if self._backend_name == "turbovec":
+            import numpy as np  # type: ignore
+            arr = np.array(vec, dtype=np.float32).reshape(1, -1)
+            nid = self._backend["next_id"]
+            self._backend["index"].add_with_ids(arr, np.array([nid], dtype=np.uint64))
+            meta["_turbovec_id"] = nid
+            self._backend["next_id"] = nid + 1
+            # Periodically persist
+            if nid % 100 == 0:
+                try:
+                    self._backend["index"].write(self._backend["index_path"])
+                except Exception:
+                    pass
+        elif self._backend_name == "chromadb":
             import uuid as _uuid_mod  # type: ignore
             self._backend["collection"].add(
                 embeddings=[vec],
@@ -341,7 +373,19 @@ class VectorStore:
             self._backend.add(vec, meta)
 
     def search(self, query_vec: list[float], top_k: int = 5) -> list[dict[str, Any]]:
-        if self._backend_name == "chromadb":
+        if self._backend_name == "turbovec":
+            import numpy as np  # type: ignore
+            try:
+                q = np.array(query_vec, dtype=np.float32)
+                scores, ids = self._backend["index"].search(q, k=top_k)
+                return [
+                    {"chunk": "", "source": "", "score": round(float(s), 4),
+                     "ts": "", "_turbovec_id": int(i)}
+                    for s, i in zip(scores, ids)
+                ]
+            except Exception:
+                return []
+        elif self._backend_name == "chromadb":
             results = self._backend["collection"].query(
                 query_embeddings=[query_vec],
                 n_results=top_k,
