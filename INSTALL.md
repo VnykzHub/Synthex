@@ -28,10 +28,16 @@ After starting Claude Code with the plugin:
 ## Requirements
 
 - Claude Code v2.1+
-- Python 3.12
-- Node 20+ (for visualization MCP)
+- Python 3.12 + `pip install mcp sympy`
+- Node 20+ + `cd mcp-servers/visualization && npm install`
 - sqlite3, jq on PATH
 - Docker (optional)
+
+> **Important:** After cloning, run these one-time setup commands before loading the plugin:
+> ```bash
+> pip install mcp sympy
+> cd mcp-servers/visualization && npm install && cd ../..
+> ```
 
 ## Testing the plugin
 
