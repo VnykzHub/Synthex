@@ -1,0 +1,1 @@
+Synthex memory vault test document for semantic search.
