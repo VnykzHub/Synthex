@@ -22,6 +22,9 @@
     "visualization": {
       "command": "node",
       "args": ["${CLAUDE_PLUGIN_ROOT}/mcp-servers/visualization/server.js"],
+      "env": {
+        "NODE_PATH": "${CLAUDE_PLUGIN_ROOT}/mcp-servers/visualization/node_modules"
+      },
       "timeout": 30000
     },
     "heavy-compute": {
